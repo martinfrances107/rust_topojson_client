@@ -1,9 +1,11 @@
 use topojson::Position;
 use topojson::TransformParams;
 
-pub type TransformFn = Box<dyn FnMut(Position, Option<i32>) -> Vec<f64>>;
+/// The second parameter in used in the case of multiple delta encoded arcs
+/// (see the tests below: If in doubt set to zero.)
+pub type TransformFn = Box<dyn FnMut(Position, usize) -> Vec<f64>>;
 
-/// Given a set of transform parmaters return a tranformfunction that transform
+/// Given a set of transform parmaters return a tranform function that transform
 /// position into a Vec<f64>
 pub fn generate(tp: TransformParams) -> TransformFn {
     let mut x0 = 0_f64;
@@ -15,19 +17,10 @@ pub fn generate(tp: TransformParams) -> TransformFn {
     let dy = tp.translate[1];
 
     Box::new(move |input: Position, i| -> Vec<f64> {
-        match i {
-            Some(i) => {
-                if i == 0 {
-                    x0 = 0_f64;
-                    y0 = 0_f64;
-                }
-            }
-            None => {
-                x0 = 0_f64;
-                y0 = 0_f64;
-            }
+        if i == 0 {
+            x0 = 0_f64;
+            y0 = 0_f64;
         }
-
         let mut j = 2;
         let n = input.len();
         let mut output = Vec::with_capacity(n);
@@ -79,7 +72,7 @@ mod transform_tests {
             translate: [4_f64, 5_f64],
         });
 
-        assert_eq!(transform(vec![6_f64, 7_f64], None), [16_f64, 26_f64]);
+        assert_eq!(transform(vec![6_f64, 7_f64], 0), [16_f64, 26_f64]);
     }
 
     // This test does not need to be ported because rust handles mutability differently.
@@ -101,7 +94,7 @@ mod transform_tests {
             translate: [4_f64, 5_f64],
         });
         assert_eq!(
-            transform(vec![6_f64, 7_f64, 42_f64], None),
+            transform(vec![6_f64, 7_f64, 42_f64], 0),
             [16_f64, 26_f64, 42_f64]
         );
     }
@@ -113,9 +106,9 @@ mod transform_tests {
             scale: [2_f64, 3_f64],
             translate: [4_f64, 5_f64],
         });
-        assert_eq!(transform(vec![1_f64, 2_f64], None), [6_f64, 11_f64]);
-        assert_eq!(transform(vec![3_f64, 4_f64], None), [10_f64, 17_f64]);
-        assert_eq!(transform(vec![5_f64, 6_f64], None), [14_f64, 23_f64]);
+        assert_eq!(transform(vec![1_f64, 2_f64], 0), [6_f64, 11_f64]);
+        assert_eq!(transform(vec![3_f64, 4_f64], 0), [10_f64, 17_f64]);
+        assert_eq!(transform(vec![5_f64, 6_f64], 0), [14_f64, 23_f64]);
     }
 
     #[test]
@@ -125,12 +118,12 @@ mod transform_tests {
             scale: [2_f64, 3_f64],
             translate: [4_f64, 5_f64],
         });
-        assert_eq!(transform(vec![1_f64, 2_f64], Some(0)), [6_f64, 11_f64]);
-        assert_eq!(transform(vec![3_f64, 4_f64], Some(1)), [12_f64, 23_f64]);
-        assert_eq!(transform(vec![5_f64, 6_f64], Some(2)), [22_f64, 41_f64]);
-        assert_eq!(transform(vec![1_f64, 2_f64], Some(3)), [24_f64, 47_f64]);
-        assert_eq!(transform(vec![3_f64, 4_f64], Some(4)), [30_f64, 59_f64]);
-        assert_eq!(transform(vec![5_f64, 6_f64], Some(5)), [40_f64, 77_f64]);
+        assert_eq!(transform(vec![1_f64, 2_f64], 0), [6_f64, 11_f64]);
+        assert_eq!(transform(vec![3_f64, 4_f64], 1), [12_f64, 23_f64]);
+        assert_eq!(transform(vec![5_f64, 6_f64], 2), [22_f64, 41_f64]);
+        assert_eq!(transform(vec![1_f64, 2_f64], 3), [24_f64, 47_f64]);
+        assert_eq!(transform(vec![3_f64, 4_f64], 4), [30_f64, 59_f64]);
+        assert_eq!(transform(vec![5_f64, 6_f64], 5), [40_f64, 77_f64]);
     }
 
     #[test]
@@ -140,11 +133,11 @@ mod transform_tests {
             scale: [2_f64, 3_f64],
             translate: [4_f64, 5_f64],
         });
-        assert_eq!(transform(vec![1_f64, 2_f64], Some(0)), [6_f64, 11_f64]);
-        assert_eq!(transform(vec![3_f64, 4_f64], Some(1)), [12_f64, 23_f64]);
-        assert_eq!(transform(vec![5_f64, 6_f64], Some(2)), [22_f64, 41_f64]);
-        assert_eq!(transform(vec![1_f64, 2_f64], Some(0)), [6_f64, 11_f64]);
-        assert_eq!(transform(vec![3_f64, 4_f64], Some(1)), [12_f64, 23_f64]);
-        assert_eq!(transform(vec![5_f64, 6_f64], Some(2)), [22_f64, 41_f64]);
+        assert_eq!(transform(vec![1_f64, 2_f64], 0), [6_f64, 11_f64]);
+        assert_eq!(transform(vec![3_f64, 4_f64], 1), [12_f64, 23_f64]);
+        assert_eq!(transform(vec![5_f64, 6_f64], 2), [22_f64, 41_f64]);
+        assert_eq!(transform(vec![1_f64, 2_f64], 0), [6_f64, 11_f64]);
+        assert_eq!(transform(vec![3_f64, 4_f64], 1), [12_f64, 23_f64]);
+        assert_eq!(transform(vec![5_f64, 6_f64], 2), [22_f64, 41_f64]);
     }
 }
