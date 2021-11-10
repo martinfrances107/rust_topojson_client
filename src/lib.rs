@@ -12,6 +12,9 @@
 
 extern crate derivative;
 extern crate geo;
+#[cfg(test)]
+extern crate pretty_assertions;
+
 extern crate topojson;
 
 /// function feature() and various From implementations.

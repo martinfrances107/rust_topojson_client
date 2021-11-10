@@ -13,6 +13,7 @@ use geo::Point;
 use geo::Polygon;
 use topojson::Arc;
 use topojson::ArcIndexes;
+use topojson::NamedGeometry;
 use topojson::Topology;
 use topojson::Value;
 
@@ -45,7 +46,7 @@ where
 {
     /// A constructor that can fail to parse.
     #[inline]
-    fn generate(topology: Topology, o: Value) -> Option<Geometry<T>>
+    fn generate(topology: Topology, o: NamedGeometry) -> Option<Geometry<T>>
     where
         T: 'static + CoordFloat,
     {
@@ -132,8 +133,8 @@ where
         tmp
     }
 
-    fn geometry(&mut self, o: Value) -> Geometry<T> {
-        match &o {
+    fn geometry(&mut self, o: NamedGeometry) -> Geometry<T> {
+        match &o.geometry.value {
             Value::GeometryCollection(_stopo_geometries) => {
                 todo!("Must implement GeometryCollection");
                 // let geo_geometries: Vec<Geometry<T>>;
@@ -215,27 +216,58 @@ where
 #[cfg(not(tarpaulin_include))]
 #[cfg(test)]
 mod tests {
-    extern crate pretty_assertions;
 
+    use super::*;
+    use geo::Coordinate;
     use geo::Geometry;
-    use topojson::{NamedGeometry, TopoJson, TransformParams};
+    use geo::Polygon;
+    #[cfg(test)]
+    use pretty_assertions::assert_eq;
+    use topojson::NamedGeometry;
+    use topojson::TopoJson;
+    use topojson::TransformParams;
+    use topojson::Value;
 
     use super::*;
 
     #[test]
     fn geometry_type_is_preserved() {
         println!("topojson.feature the geometry type is preserved");
-        // let t = simple_topology(TopoJson::Geometry(TopoJson::Value::Polygon::new(
-        //     Topo::Value::Polygon([[0]]),
-        // )));
-        // assert_eq!(
-        //     Object::from((t, t.objects.feature("/foo/geometry/type").unwrap())),
-        //     "Polygon"
-        // );
+        let t = simple_topology(topojson::Geometry::new(Value::Polygon(vec![vec![0]])));
+        let computed: Option<Geometry<f64>> = Builder::<f64>::generate(
+            t,
+            NamedGeometry {
+                name: "a".into(),
+                geometry: topojson::Geometry::new(Value::Polygon(vec![vec![0]])),
+            },
+        );
+
+        match computed {
+            Some(g) => match g {
+                Geometry::Polygon(_) => {
+                    assert!(true, "Must produce polygon");
+                }
+                _ => {
+                    assert!(false, "did not decode to a polygon");
+                }
+            },
+            None => {
+                assert!(false, "should have returned with geometry");
+            }
+        };
     }
+
     #[test]
     fn point_is_a_valid_geometry_type() {
         println!("topojson.feature Point is a valid geometry type");
+        let t = simple_topology(topojson::Geometry::new(Value::Point(vec![vec![0]])));
+        let computed: Option<Geometry<f64>> = Builder::<f64>::generate(
+            t,
+            NamedGeometry {
+                name: "a".into(),
+                geometry: topojson::Geometry::new(Value::Polygon(vec![vec![0]])),
+            },
+        );
         // let t = simple_topology(topojson::Geometry::new(TopoJson::Value::Point::new()));
         // let computed: Geometry<f64> = Object::generate(t, t["objects"]["foo"]);
         // assert_eq!(computed, Geometry::Point(Point::new(0_f64, 0_f64)));

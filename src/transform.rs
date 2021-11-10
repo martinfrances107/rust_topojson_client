@@ -46,7 +46,7 @@ where
 #[cfg(not(tarpaulin_include))]
 #[cfg(test)]
 mod transform_tests {
-    extern crate pretty_assertions;
+    use pretty_assertions::{assert_eq, assert_ne};
 
     use super::*;
 
