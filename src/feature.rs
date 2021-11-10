@@ -5,6 +5,7 @@ use derivative::*;
 use geo::CoordFloat;
 use geo::Coordinate;
 use geo::Geometry;
+use geo::GeometryCollection;
 use geo::LineString;
 use geo::MultiLineString;
 use geo::MultiPoint;
@@ -13,7 +14,6 @@ use geo::Point;
 use geo::Polygon;
 use topojson::Arc;
 use topojson::ArcIndexes;
-use topojson::NamedGeometry;
 use topojson::Topology;
 use topojson::Value;
 
@@ -46,7 +46,7 @@ where
 {
     /// A constructor that fails when topology does not contain a transform.
     #[inline]
-    pub fn generate(topology: Topology, o: NamedGeometry) -> Option<Geometry<T>>
+    pub fn generate(topology: Topology, o: Value) -> Option<Geometry<T>>
     where
         T: 'static + CoordFloat,
     {
@@ -60,7 +60,7 @@ where
                     transform_point: transform,
                 };
 
-                Some(out.geometry(o))
+                Some(out.geometry(&o))
             }
         }
     }
@@ -125,20 +125,16 @@ where
     }
 
     #[inline]
-    fn geometry(&mut self, o: NamedGeometry) -> Geometry<T> {
-        match &o.geometry.value {
-            Value::GeometryCollection(_stopo_geometries) => {
-                todo!("Must implement GeometryCollection");
-                // let geo_geometries: Vec<Geometry<T>>;
-                // for topo_geometry in topo_geometries {
-                //     let topo_geometry = topo_geometry.value;
-                //     let geo_geometry = Geomtry<T>::parse().unwrap();
-                //     geo_geometries.push(geo_geometry);
-                // }
-                // Geometry::GeometryCollection(GeometryCollection(geo_geometries))
+    fn geometry(&mut self, o: &Value) -> Geometry<T> {
+        match &o {
+            Value::GeometryCollection(topo_geometries) => {
+                let geo_geometries: Vec<Geometry<T>> = topo_geometries
+                    .iter()
+                    .map(|x| self.geometry(&x.value))
+                    .collect();
+                Geometry::GeometryCollection(GeometryCollection(geo_geometries))
             }
             Value::Point(topo_point) => {
-                // Should I transform using self.point()??
                 let p = self.point(topo_point);
                 Geometry::Point(Point(Coordinate::<T> { x: p[0], y: p[1] }))
             }
@@ -214,13 +210,8 @@ mod tests {
     fn geometry_type_is_preserved() {
         println!("topojson.feature the geometry type is preserved");
         let t = simple_topology(topojson::Geometry::new(Value::Polygon(vec![vec![0]])));
-        let computed: Option<Geometry<f64>> = Builder::<f64>::generate(
-            t,
-            NamedGeometry {
-                name: "a".into(),
-                geometry: topojson::Geometry::new(Value::Polygon(vec![vec![0]])),
-            },
-        );
+        let computed: Option<Geometry<f64>> =
+            Builder::<f64>::generate(t, Value::Polygon(vec![vec![0]]));
 
         match computed {
             Some(g) => match g {
@@ -241,13 +232,8 @@ mod tests {
     fn point() {
         println!("topojson.feature Point is a valid geometry type");
         let t = simple_topology(topojson::Geometry::new(Value::Point(vec![0_f64, 0_f64])));
-        let computed: Option<Geometry<f64>> = Builder::<f64>::generate(
-            t,
-            NamedGeometry {
-                name: "a".into(),
-                geometry: topojson::Geometry::new(Value::Point(vec![0_f64, 0_f64])),
-            },
-        );
+        let computed: Option<Geometry<f64>> =
+            Builder::<f64>::generate(t, Value::Point(vec![0_f64, 0_f64]));
 
         assert_eq!(
             computed,
@@ -261,13 +247,8 @@ mod tests {
         let t = simple_topology(topojson::Geometry::new(Value::MultiPoint(vec![vec![
             0_f64, 0_f64,
         ]])));
-        let computed: Option<Geometry<f64>> = Builder::<f64>::generate(
-            t,
-            NamedGeometry {
-                name: "foo".into(),
-                geometry: topojson::Geometry::new(Value::MultiPoint(vec![vec![0_f64, 0_f64]])),
-            },
-        );
+        let computed: Option<Geometry<f64>> =
+            Builder::<f64>::generate(t, Value::MultiPoint(vec![vec![0_f64, 0_f64]]));
 
         assert_eq!(
             computed,
@@ -283,13 +264,8 @@ mod tests {
         println!("topojson.feature LineString is a valid geometry type");
         // TODO javascript test supplied arc indexes not arrays of points.
         let t = simple_topology(topojson::Geometry::new(Value::LineString(vec![0])));
-        let computed: Option<Geometry<f64>> = Builder::<f64>::generate(
-            t,
-            NamedGeometry {
-                name: "foo".into(),
-                geometry: topojson::Geometry::new(Value::LineString(vec![0])),
-            },
-        );
+        let computed: Option<Geometry<f64>> =
+            Builder::<f64>::generate(t, Value::LineString(vec![0]));
 
         assert_eq!(
             computed,
@@ -309,13 +285,8 @@ mod tests {
         let t = simple_topology(topojson::Geometry::new(Value::MultiLineString(vec![vec![
             0,
         ]])));
-        let computed: Option<Geometry<f64>> = Builder::<f64>::generate(
-            t,
-            NamedGeometry {
-                name: "foo".into(),
-                geometry: topojson::Geometry::new(Value::MultiLineString(vec![vec![0]])),
-            },
-        );
+        let computed: Option<Geometry<f64>> =
+            Builder::<f64>::generate(t, Value::MultiLineString(vec![vec![0]]));
 
         assert_eq!(
             computed,
@@ -335,13 +306,8 @@ mod tests {
     fn line_string_two_coords() {
         println!("topojson.feature line-strings have at least two coordinates");
         let t1 = simple_topology(topojson::Geometry::new(Value::LineString(vec![3])));
-        let computed1: Option<Geometry<f64>> = Builder::<f64>::generate(
-            t1,
-            NamedGeometry {
-                name: "foo".into(),
-                geometry: topojson::Geometry::new(Value::LineString(vec![0])),
-            },
-        );
+        let computed1: Option<Geometry<f64>> =
+            Builder::<f64>::generate(t1, Value::LineString(vec![0]));
 
         assert_eq!(
             computed1,
@@ -357,13 +323,8 @@ mod tests {
         let t2 = simple_topology(topojson::Geometry::new(Value::MultiLineString(vec![vec![
             3,
         ]])));
-        let computed2: Option<Geometry<f64>> = Builder::<f64>::generate(
-            t2,
-            NamedGeometry {
-                name: "foo".into(),
-                geometry: topojson::Geometry::new(Value::MultiLineString(vec![vec![3], vec![4]])),
-            },
-        );
+        let computed2: Option<Geometry<f64>> =
+            Builder::<f64>::generate(t2, Value::MultiLineString(vec![vec![3], vec![4]]));
 
         assert_eq!(
             computed2,
@@ -384,13 +345,8 @@ mod tests {
     fn polygon() {
         println!("topojson.feature Polygon is a valid feature type");
         let t = simple_topology(topojson::Geometry::new(Value::Polygon(vec![vec![0]])));
-        let computed: Option<Geometry<f64>> = Builder::<f64>::generate(
-            t,
-            NamedGeometry {
-                name: "foo".into(),
-                geometry: topojson::Geometry::new(Value::Polygon(vec![vec![0]])),
-            },
-        );
+        let computed: Option<Geometry<f64>> =
+            Builder::<f64>::generate(t, Value::Polygon(vec![vec![0]]));
 
         assert_eq!(
             computed,
@@ -413,13 +369,8 @@ mod tests {
         let t = simple_topology(topojson::Geometry::new(Value::MultiPolygon(vec![vec![
             vec![0],
         ]])));
-        let computed: Option<Geometry<f64>> = Builder::<f64>::generate(
-            t,
-            NamedGeometry {
-                name: "foo".into(),
-                geometry: topojson::Geometry::new(Value::MultiPolygon(vec![vec![vec![0]]])),
-            },
-        );
+        let computed: Option<Geometry<f64>> =
+            Builder::<f64>::generate(t, Value::MultiPolygon(vec![vec![vec![0]]]));
 
         assert_eq!(
             computed,
@@ -440,13 +391,8 @@ mod tests {
     fn negative_indexes_indicates_revered_coordinates() {
         println!("topojson.feature Polygon is a valid feature type");
         let t = simple_topology(topojson::Geometry::new(Value::Polygon(vec![vec![!0_i32]])));
-        let computed: Option<Geometry<f64>> = Builder::<f64>::generate(
-            t,
-            NamedGeometry {
-                name: "foo".into(),
-                geometry: topojson::Geometry::new(Value::Polygon(vec![vec![!0_i32]])),
-            },
-        );
+        let computed: Option<Geometry<f64>> =
+            Builder::<f64>::generate(t, Value::Polygon(vec![vec![!0_i32]]));
 
         assert_eq!(
             computed,
