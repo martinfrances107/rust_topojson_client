@@ -332,7 +332,7 @@ mod tests {
     }
 
     #[test]
-    fn multiline_string_two_coords() {
+    fn line_string_two_coords() {
         println!("topojson.feature line-strings have at least two coordinates");
         let t1 = simple_topology(topojson::Geometry::new(Value::LineString(vec![3])));
         let computed1: Option<Geometry<f64>> = Builder::<f64>::generate(
@@ -377,6 +377,62 @@ mod tests {
                     Coordinate { x: 0_f64, y: 0_f64 },
                 ]),
             ])))
+        );
+    }
+
+    #[test]
+    fn polygon() {
+        println!("topojson.feature Polygon is a valid feature type");
+        let t = simple_topology(topojson::Geometry::new(Value::Polygon(vec![vec![0]])));
+        let computed: Option<Geometry<f64>> = Builder::<f64>::generate(
+            t,
+            NamedGeometry {
+                name: "foo".into(),
+                geometry: topojson::Geometry::new(Value::Polygon(vec![vec![0]])),
+            },
+        );
+
+        assert_eq!(
+            computed,
+            Some(Geometry::Polygon(Polygon::new(
+                LineString(vec![
+                    Coordinate { x: 0_f64, y: 0_f64 },
+                    Coordinate { x: 1_f64, y: 0_f64 },
+                    Coordinate { x: 1_f64, y: 1_f64 },
+                    Coordinate { x: 0_f64, y: 1_f64 },
+                    Coordinate { x: 0_f64, y: 0_f64 },
+                ]),
+                vec![]
+            )))
+        );
+    }
+
+    #[test]
+    fn multipolygon() {
+        println!("topojson.feature Polygon is a valid feature type");
+        let t = simple_topology(topojson::Geometry::new(Value::MultiPolygon(vec![vec![
+            vec![0],
+        ]])));
+        let computed: Option<Geometry<f64>> = Builder::<f64>::generate(
+            t,
+            NamedGeometry {
+                name: "foo".into(),
+                geometry: topojson::Geometry::new(Value::MultiPolygon(vec![vec![vec![0]]])),
+            },
+        );
+
+        assert_eq!(
+            computed,
+            Some(Geometry::MultiPolygon(MultiPolygon(vec![Polygon::new(
+                LineString(vec![
+                    Coordinate { x: 0_f64, y: 0_f64 },
+                    Coordinate { x: 1_f64, y: 0_f64 },
+                    Coordinate { x: 1_f64, y: 1_f64 },
+                    Coordinate { x: 0_f64, y: 1_f64 },
+                    Coordinate { x: 0_f64, y: 0_f64 },
+                ]),
+                vec![]
+            )])))
         );
     }
 
