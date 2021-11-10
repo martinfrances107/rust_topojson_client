@@ -124,6 +124,7 @@ where
         arcs.iter().map(|x| self.ring(x)).collect()
     }
 
+    #[inline]
     fn geometry(&mut self, o: NamedGeometry) -> Geometry<T> {
         match &o.geometry.value {
             Value::GeometryCollection(_stopo_geometries) => {
@@ -138,10 +139,8 @@ where
             }
             Value::Point(topo_point) => {
                 // Should I transform using self.point()??
-                Geometry::Point(Point(Coordinate::<T> {
-                    x: T::from(topo_point[0]).unwrap(),
-                    y: T::from(topo_point[1]).unwrap(),
-                }))
+                let p = self.point(topo_point);
+                Geometry::Point(Point(Coordinate::<T> { x: p[0], y: p[1] }))
             }
             Value::MultiPoint(topo_multipoint) => {
                 let coordinates: Vec<Coordinate<T>> = topo_multipoint
@@ -206,7 +205,7 @@ mod tests {
     use geo::Coordinate;
     use geo::Geometry;
     use geo::Polygon;
-    #[cfg(test)]
+    // use pretty_assertions::assert;
     use pretty_assertions::assert_eq;
     use topojson::NamedGeometry;
     use topojson::TransformParams;
@@ -239,43 +238,43 @@ mod tests {
         };
     }
 
-    // #[test]
-    // fn point() {
-    //     println!("topojson.feature Point is a valid geometry type");
-    //     let t = simple_topology(topojson::Geometry::new(Value::Point(vec![0_f64, 0_f64])));
-    //     let computed: Option<Geometry<f64>> = Builder::<f64>::generate(
-    //         t,
-    //         NamedGeometry {
-    //             name: "a".into(),
-    //             geometry: topojson::Geometry::new(Value::Point(vec![0_f64])),
-    //         },
-    //     );
+    #[test]
+    fn point() {
+        println!("topojson.feature Point is a valid geometry type");
+        let t = simple_topology(topojson::Geometry::new(Value::Point(vec![0_f64, 0_f64])));
+        let computed: Option<Geometry<f64>> = Builder::<f64>::generate(
+            t,
+            NamedGeometry {
+                name: "a".into(),
+                geometry: topojson::Geometry::new(Value::Point(vec![0_f64, 0_f64])),
+            },
+        );
 
-    //     assert_eq!(
-    //         computed,
-    //         Some(Geometry::Point(Point(Coordinate { x: 0_f64, y: 0_f64 })))
-    //     );
-    // }
+        assert_eq!(
+            computed,
+            Some(Geometry::Point(Point(Coordinate { x: 0_f64, y: 0_f64 })))
+        );
+    }
 
-    // #[test]
-    // fn multipolygon() {
-    //     println!("topojson.feature Point is a valid geometry type");
-    //     let t = simple_topology(topojson::Geometry::new(Value::MultiPoint(vec![vec![
-    //         0_f64, 0_f64,
-    //     ]])));
-    //     let computed: Option<Geometry<f64>> = Builder::<f64>::generate(
-    //         t,
-    //         NamedGeometry {
-    //             name: "a".into(),
-    //             geometry: topojson::Geometry::new(Value::Point(vec![0_f64])),
-    //         },
-    //     );
+    #[test]
+    fn multipolygon() {
+        println!("topojson.feature Point is a valid geometry type");
+        let t = simple_topology(topojson::Geometry::new(Value::MultiPoint(vec![vec![
+            0_f64, 0_f64,
+        ]])));
+        let computed: Option<Geometry<f64>> = Builder::<f64>::generate(
+            t,
+            NamedGeometry {
+                name: "a".into(),
+                geometry: topojson::Geometry::new(Value::Point(vec![0_f64, 0_f64])),
+            },
+        );
 
-    //     assert_eq!(
-    //         computed,
-    //         Some(Geometry::Point(Point(Coordinate { x: 0_f64, y: 0_f64 })))
-    //     );
-    // }
+        assert_eq!(
+            computed,
+            Some(Geometry::Point(Point(Coordinate { x: 0_f64, y: 0_f64 })))
+        );
+    }
 
     // #[test]
     // fn linestring() {
