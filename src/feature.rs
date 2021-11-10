@@ -205,7 +205,6 @@ mod tests {
     use geo::Coordinate;
     use geo::Geometry;
     use geo::Polygon;
-    // use pretty_assertions::assert;
     use pretty_assertions::assert_eq;
     use topojson::NamedGeometry;
     use topojson::TransformParams;
@@ -257,15 +256,15 @@ mod tests {
     }
 
     #[test]
-    fn multipolygon() {
-        println!("topojson.feature Point is a valid geometry type");
+    fn multipoint() {
+        println!("topojson.feature MultiPoint is a valid geometry type");
         let t = simple_topology(topojson::Geometry::new(Value::MultiPoint(vec![vec![
             0_f64, 0_f64,
         ]])));
         let computed: Option<Geometry<f64>> = Builder::<f64>::generate(
             t,
             NamedGeometry {
-                name: "a".into(),
+                name: "foo".into(),
                 geometry: topojson::Geometry::new(Value::MultiPoint(vec![vec![0_f64, 0_f64]])),
             },
         );
@@ -279,51 +278,58 @@ mod tests {
         );
     }
 
-    // #[test]
-    // fn linestring() {
-    //     println!("topojson.feature Point is a valid geometry type");
-    // TODO javascript test supplied arc indexes not arrays of points.
-    // let t = simple_topology(topojson::Geometry::new(Value::LineString(vec![
-    //     vec![0, 0],
-    //     vec![1, 0],
-    //     vec![1, 1],
-    //     vec![0, 1],
-    //     vec![0, 0],
-    // ])));
-    // let computed: Option<Geometry<f64>> = Builder::<f64>::generate(
-    //     t,
-    //     NamedGeometry {
-    //         name: "a".into(),
-    //         geometry: topojson::Geometry::new(Value::Point(vec![0_f64])),
-    //     },
-    // );
+    #[test]
+    fn linestring() {
+        println!("topojson.feature LineString is a valid geometry type");
+        // TODO javascript test supplied arc indexes not arrays of points.
+        let t = simple_topology(topojson::Geometry::new(Value::LineString(vec![0])));
+        let computed: Option<Geometry<f64>> = Builder::<f64>::generate(
+            t,
+            NamedGeometry {
+                name: "foo".into(),
+                geometry: topojson::Geometry::new(Value::LineString(vec![0])),
+            },
+        );
 
-    // assert_eq!(
-    //     computed,
-    //     Some(Geometry::Point(Point(Coordinate { x: 0_f64, y: 0_f64 })))
-    // );
-    // }
+        assert_eq!(
+            computed,
+            Some(Geometry::LineString(LineString(vec![
+                Coordinate { x: 0_f64, y: 0_f64 },
+                Coordinate { x: 1_f64, y: 0_f64 },
+                Coordinate { x: 1_f64, y: 1_f64 },
+                Coordinate { x: 0_f64, y: 1_f64 },
+                Coordinate { x: 0_f64, y: 0_f64 },
+            ])))
+        );
+    }
 
-    // #[test]
-    // fn multilinestring() {
-    //     println!("topojson.feature Point is a valid geometry type");
-    //     let t = simple_topology(topojson::Geometry::new(Value::MultiLineString(vec![
-    //         vec![0],
-    //         vec![0],
-    //     ])));
-    //     let computed: Option<Geometry<f64>> = Builder::<f64>::generate(
-    //         t,
-    //         NamedGeometry {
-    //             name: "a".into(),
-    //             geometry: topojson::Geometry::new(Value::Point(vec![0_f64])),
-    //         },
-    //     );
+    #[test]
+    fn multiline_string() {
+        println!("topojson.feature MultiLineString is a valid geometry type");
+        let t = simple_topology(topojson::Geometry::new(Value::MultiLineString(vec![vec![
+            0,
+        ]])));
+        let computed: Option<Geometry<f64>> = Builder::<f64>::generate(
+            t,
+            NamedGeometry {
+                name: "foo".into(),
+                geometry: topojson::Geometry::new(Value::MultiLineString(vec![vec![0]])),
+            },
+        );
 
-    //     assert_eq!(
-    //         computed,
-    //         Some(Geometry::Point(Point(Coordinate { x: 0_f64, y: 0_f64 })))
-    //     );
-    // }
+        assert_eq!(
+            computed,
+            Some(Geometry::MultiLineString(MultiLineString(vec![
+                LineString(vec![
+                    Coordinate { x: 0_f64, y: 0_f64 },
+                    Coordinate { x: 1_f64, y: 0_f64 },
+                    Coordinate { x: 1_f64, y: 1_f64 },
+                    Coordinate { x: 0_f64, y: 1_f64 },
+                    Coordinate { x: 0_f64, y: 0_f64 },
+                ])
+            ])))
+        );
+    }
 
     fn simple_topology(object: topojson::Geometry) -> Topology {
         Topology {
