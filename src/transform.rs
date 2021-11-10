@@ -1,35 +1,42 @@
-use topojson::Position;
+use std::ops::AddAssign;
+
+use geo::CoordFloat;
 use topojson::TransformParams;
 
 /// The second parameter in used in the case of multiple delta encoded arcs
 /// (see the tests below: If in doubt set to zero.)
-pub type TransformFn = Box<dyn FnMut(Position, usize) -> Vec<f64>>;
+pub type TransformFn<T> = Box<dyn FnMut(&[f64], usize) -> Vec<T>>;
 
-/// Given a set of transform parmaters return a tranform function that transform
+/// Given a set of transform parameters return a tranform function that transforms
 /// position into a Vec<f64>
-pub fn generate(tp: TransformParams) -> TransformFn {
-    let mut x0 = 0_f64;
-    let mut y0 = 0_f64;
-    let kx = tp.scale[0];
-    let ky = tp.scale[1];
+pub fn generate<T>(tp: TransformParams) -> TransformFn<T>
+where
+    T: 'static + AddAssign<T> + CoordFloat,
+{
+    let mut x0 = T::zero();
+    let mut y0 = T::zero();
+    let kx: T = T::from(tp.scale[0]).expect("Could not convert Transform::scale.x");
+    let ky: T = T::from(tp.scale[1]).expect("could not convert Transform::scale().y");
 
-    let dx = tp.translate[0];
-    let dy = tp.translate[1];
+    let dx = T::from(tp.translate[0]).expect("Could not convert Transform.translate.x");
+    let dy = T::from(tp.translate[1]).expect("Could not convert Transform.translate.y");
 
-    Box::new(move |input: Position, i| -> Vec<f64> {
+    Box::new(move |input: &[f64], i| -> Vec<T> {
         if i == 0 {
-            x0 = 0_f64;
-            y0 = 0_f64;
+            x0 = T::zero();
+            y0 = T::zero();
         }
         let mut j = 2;
         let n = input.len();
         let mut output = Vec::with_capacity(n);
-        x0 += input[0];
+        x0 += T::from(input[0]).unwrap();
         output.push(x0 * kx + dx);
-        y0 += input[1];
+        y0 += T::from(input[1]).unwrap();
         output.push(y0 * ky + dy);
+
+        // Copy over all remaining point in the input vector?
         while j < n {
-            output.push(input[j]);
+            output.push(T::from(input[j]).unwrap());
             j += 1;
         }
         output
@@ -67,12 +74,12 @@ mod transform_tests {
     #[test]
     fn returns_a_point_transform_function() {
         println!("topojson.transform(topology) returns a point-transform function if transform is defined");
-        let mut transform = generate(TransformParams {
+        let mut transform = generate::<f64>(TransformParams {
             scale: [2_f64, 3_f64],
             translate: [4_f64, 5_f64],
         });
 
-        assert_eq!(transform(vec![6_f64, 7_f64], 0), [16_f64, 26_f64]);
+        assert_eq!(transform(&vec![6_f64, 7_f64], 0), vec![16_f64, 26_f64]);
     }
 
     // This test does not need to be ported because rust handles mutability differently.
@@ -89,12 +96,12 @@ mod transform_tests {
     #[test]
     fn preserves_extra_dimensions() {
         println!("transform(point) preserves extra dimensions");
-        let mut transform = generate(TransformParams {
+        let mut transform = generate::<f64>(TransformParams {
             scale: [2_f64, 3_f64],
             translate: [4_f64, 5_f64],
         });
         assert_eq!(
-            transform(vec![6_f64, 7_f64, 42_f64], 0),
+            transform(&vec![6_f64, 7_f64, 42_f64], 0),
             [16_f64, 26_f64, 42_f64]
         );
     }
@@ -102,42 +109,42 @@ mod transform_tests {
     #[test]
     fn transforms_individual_points() {
         println!("transform(point) transforms individual points");
-        let mut transform = generate(TransformParams {
+        let mut transform = generate::<f64>(TransformParams {
             scale: [2_f64, 3_f64],
             translate: [4_f64, 5_f64],
         });
-        assert_eq!(transform(vec![1_f64, 2_f64], 0), [6_f64, 11_f64]);
-        assert_eq!(transform(vec![3_f64, 4_f64], 0), [10_f64, 17_f64]);
-        assert_eq!(transform(vec![5_f64, 6_f64], 0), [14_f64, 23_f64]);
+        assert_eq!(transform(&vec![1_f64, 2_f64], 0), vec![6_f64, 11_f64]);
+        assert_eq!(transform(&vec![3_f64, 4_f64], 0), vec![10_f64, 17_f64]);
+        assert_eq!(transform(&vec![5_f64, 6_f64], 0), vec![14_f64, 23_f64]);
     }
 
     #[test]
     fn transforms_delta_encoded_arcs() {
         println!("transform(point, index) transforms delta-encoded arcs");
-        let mut transform = generate(TransformParams {
+        let mut transform = generate::<f64>(TransformParams {
             scale: [2_f64, 3_f64],
             translate: [4_f64, 5_f64],
         });
-        assert_eq!(transform(vec![1_f64, 2_f64], 0), [6_f64, 11_f64]);
-        assert_eq!(transform(vec![3_f64, 4_f64], 1), [12_f64, 23_f64]);
-        assert_eq!(transform(vec![5_f64, 6_f64], 2), [22_f64, 41_f64]);
-        assert_eq!(transform(vec![1_f64, 2_f64], 3), [24_f64, 47_f64]);
-        assert_eq!(transform(vec![3_f64, 4_f64], 4), [30_f64, 59_f64]);
-        assert_eq!(transform(vec![5_f64, 6_f64], 5), [40_f64, 77_f64]);
+        assert_eq!(transform(&vec![1_f64, 2_f64], 0), vec![6_f64, 11_f64]);
+        assert_eq!(transform(&vec![3_f64, 4_f64], 1), vec![12_f64, 23_f64]);
+        assert_eq!(transform(&vec![5_f64, 6_f64], 2), vec![22_f64, 41_f64]);
+        assert_eq!(transform(&vec![1_f64, 2_f64], 3), vec![24_f64, 47_f64]);
+        assert_eq!(transform(&vec![3_f64, 4_f64], 4), vec![30_f64, 59_f64]);
+        assert_eq!(transform(&vec![5_f64, 6_f64], 5), vec![40_f64, 77_f64]);
     }
 
     #[test]
     fn transforms_mutliple_delta_encoded_arcs() {
         println!("transform(point, index) transforms delta-encoded arcs");
-        let mut transform = generate(TransformParams {
+        let mut transform = generate::<f64>(TransformParams {
             scale: [2_f64, 3_f64],
             translate: [4_f64, 5_f64],
         });
-        assert_eq!(transform(vec![1_f64, 2_f64], 0), [6_f64, 11_f64]);
-        assert_eq!(transform(vec![3_f64, 4_f64], 1), [12_f64, 23_f64]);
-        assert_eq!(transform(vec![5_f64, 6_f64], 2), [22_f64, 41_f64]);
-        assert_eq!(transform(vec![1_f64, 2_f64], 0), [6_f64, 11_f64]);
-        assert_eq!(transform(vec![3_f64, 4_f64], 1), [12_f64, 23_f64]);
-        assert_eq!(transform(vec![5_f64, 6_f64], 2), [22_f64, 41_f64]);
+        assert_eq!(transform(&vec![1_f64, 2_f64], 0), vec![6_f64, 11_f64]);
+        assert_eq!(transform(&vec![3_f64, 4_f64], 1), vec![12_f64, 23_f64]);
+        assert_eq!(transform(&vec![5_f64, 6_f64], 2), vec![22_f64, 41_f64]);
+        assert_eq!(transform(&vec![1_f64, 2_f64], 0), vec![6_f64, 11_f64]);
+        assert_eq!(transform(&vec![3_f64, 4_f64], 1), vec![12_f64, 23_f64]);
+        assert_eq!(transform(&vec![5_f64, 6_f64], 2), vec![22_f64, 41_f64]);
     }
 }

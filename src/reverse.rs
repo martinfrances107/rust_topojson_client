@@ -1,6 +1,8 @@
+use geo::CoordFloat;
+
 pub(crate) fn reverse<T>(array: &mut Vec<T>, n: usize)
 where
-    T: Copy,
+    T: CoordFloat,
 {
     let mut t;
     let mut j = array.len();

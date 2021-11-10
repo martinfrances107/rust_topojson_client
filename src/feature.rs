@@ -1,0 +1,271 @@
+use std::marker::PhantomData;
+use std::ops::AddAssign;
+
+use derivative::*;
+use geo::CoordFloat;
+use geo::Coordinate;
+use geo::Geometry;
+use geo::LineString;
+use geo::MultiLineString;
+use geo::MultiPoint;
+use geo::MultiPolygon;
+use geo::Point;
+use geo::Polygon;
+use topojson::Arc;
+use topojson::ArcIndexes;
+use topojson::Topology;
+use topojson::Value;
+
+use crate::reverse::reverse;
+use crate::transform::generate as transform;
+use crate::transform::TransformFn;
+
+#[derive(Derivative)]
+#[derivative(Debug)]
+struct Builder<T>
+where
+    T: AddAssign<T> + CoordFloat,
+{
+    pd: PhantomData<T>,
+    arcs: Vec<Arc>,
+    #[derivative(Debug = "ignore")]
+    transform_point: TransformFn<T>,
+}
+
+// impl From<(Topology, String)> for Object {
+//     #[inline]
+//     fn from(tuple: (Topology, String)) -> Self {
+//         Object::feature(tuple.0, tuple.0[tuple.1]).expect("failed to parse")
+//     }
+// }
+
+impl<T> Builder<T>
+where
+    T: AddAssign<T> + CoordFloat,
+{
+    /// A constructor that can fail to parse.
+    #[inline]
+    fn generate(topology: Topology, o: Value) -> Option<Geometry<T>>
+    where
+        T: 'static + CoordFloat,
+    {
+        let transform = match topology.transform {
+            Some(transform_params) => transform::<T>(transform_params),
+            None => {
+                return None;
+            }
+        };
+
+        let mut out = Self {
+            pd: PhantomData::<T>::default(),
+            arcs: topology.arcs,
+            transform_point: transform,
+        };
+
+        Some(out.geometry(o))
+    }
+
+    /// Convert the index found in a Geometry object into a point.
+    ///
+    /// Using the top level arcs array as reference.
+    fn arc(&mut self, i: i32, points: &mut Vec<(T, T)>) {
+        if !points.is_empty() {
+            points.pop();
+        }
+
+        // As per spec. negative indicies are bit wise NOT converted.
+        let index = if i < 0 { !(i) } else { i } as usize;
+        // let n = self.arcs.len();
+        for (k, v) in self.arcs[index].iter().enumerate() {
+            let t = (self.transform_point)(v, k);
+            points.push((t[0], t[1]));
+        }
+
+        if i < 0 {
+            // TODO must fix.
+            //     reverse(points,self.arcs.len());
+        }
+    }
+
+    /// Transform a single point.
+    #[inline]
+    fn point(&mut self, p: &[f64]) -> Vec<T> {
+        (self.transform_point)(p, 0)
+    }
+
+    /// Convert a array of indicies found in a Geometry object into a arrays of
+    /// points.
+    ///
+    /// Using the top level arcs array as reference.
+    fn line(&mut self, arcs: &ArcIndexes) -> Vec<(T, T)> {
+        let mut points: Vec<(T, T)> = Vec::new();
+        for a in arcs {
+            self.arc(*a, &mut points);
+        }
+
+        if points.len() < 2 {
+            // This should never happen per the specification.
+            points.push(points[0]);
+        }
+
+        points
+    }
+
+    fn ring(&mut self, arcs: &ArcIndexes) -> Vec<(T, T)> {
+        let mut points = self.line(arcs);
+        // This may happen if an arc has only two points.
+        while points.len() < 4 {
+            points.push(points[0]);
+        }
+        points
+    }
+
+    #[inline]
+    fn polygon(&mut self, arcs: &Vec<ArcIndexes>) -> Vec<Vec<(T, T)>> {
+        let tmp: Vec<Vec<(T, T)>> = arcs
+            .iter()
+            .map(|x| {
+                let tmp: Vec<(T, T)> = self.ring(x);
+                tmp
+            })
+            .collect();
+        tmp
+    }
+
+    fn geometry(&mut self, o: Value) -> Geometry<T> {
+        match &o {
+            Value::GeometryCollection(_stopo_geometries) => {
+                todo!("Must implement GeometryCollection");
+                // let geo_geometries: Vec<Geometry<T>>;
+                // for topo_geometry in topo_geometries {
+                //     let topo_geometry = topo_geometry.value;
+                //     let geo_geometry = Geomtry<T>::parse().unwrap();
+                //     geo_geometries.push(geo_geometry);
+                // }
+                // Geometry::GeometryCollection(GeometryCollection(geo_geometries))
+            }
+            Value::Point(topo_point) => {
+                // Should I transform using self.point()??
+                Geometry::Point(Point(Coordinate::<T> {
+                    x: T::from(topo_point[0]).unwrap(),
+                    y: T::from(topo_point[1]).unwrap(),
+                }))
+            }
+            Value::MultiPoint(topo_multipoint) => {
+                let coordinates: Vec<Coordinate<T>> = topo_multipoint
+                    .iter()
+                    .map(|c| Coordinate {
+                        x: T::from(c[0]).unwrap(),
+                        y: T::from(c[1]).unwrap(),
+                    })
+                    .collect();
+                let geo_multipoint: MultiPoint<T> = coordinates.into();
+                Geometry::MultiPoint(geo_multipoint)
+            }
+            Value::LineString(topo_ls) => {
+                // self.arc(0, topo_ls);
+                let line = self.line(topo_ls);
+                let geo_ls: LineString<T> = line.into();
+                Geometry::LineString(geo_ls)
+            }
+            Value::MultiLineString(topo_mls) => {
+                let v_mls: Vec<LineString<T>> = topo_mls
+                    .iter()
+                    .map(|x| {
+                        let tmp = self.line(x);
+                        let ls: LineString<T> = tmp.into();
+                        ls
+                    })
+                    .collect();
+                Geometry::MultiLineString(MultiLineString(v_mls))
+            }
+            Value::Polygon(topo_polygon) => {
+                let v_linestring: Vec<LineString<T>> = self
+                    .polygon(topo_polygon)
+                    .iter()
+                    .map(|x| {
+                        let x1: Vec<(T, T)> = (*x).iter().copied().collect();
+                        let tmp: LineString<T> = x1.into();
+                        tmp
+                    })
+                    .collect();
+                let exterior: LineString<T> = v_linestring[0].clone();
+                let interior = v_linestring[1..].to_vec();
+                Geometry::Polygon(Polygon::new(exterior, interior))
+            }
+            Value::MultiPolygon(topo_mp) => {
+                let v_polygon: Vec<Polygon<T>> = topo_mp
+                    .iter()
+                    .map(|x| {
+                        let v_linestring: Vec<LineString<T>> =
+                            self.polygon(x).iter().map(|y| (y.clone()).into()).collect();
+
+                        let exterior = v_linestring[0].clone();
+                        let interior: Vec<LineString<T>> = v_linestring[1..].to_vec();
+                        Polygon::new(exterior, interior)
+                    })
+                    .collect();
+
+                Geometry::MultiPolygon(MultiPolygon(v_polygon))
+            }
+        }
+    }
+}
+
+#[cfg(not(tarpaulin_include))]
+#[cfg(test)]
+mod tests {
+    extern crate pretty_assertions;
+
+    use geo::Geometry;
+    use topojson::{NamedGeometry, TopoJson, TransformParams};
+
+    use super::*;
+
+    #[test]
+    fn geometry_type_is_preserved() {
+        println!("topojson.feature the geometry type is preserved");
+        // let t = simple_topology(TopoJson::Geometry(TopoJson::Value::Polygon::new(
+        //     Topo::Value::Polygon([[0]]),
+        // )));
+        // assert_eq!(
+        //     Object::from((t, t.objects.feature("/foo/geometry/type").unwrap())),
+        //     "Polygon"
+        // );
+    }
+    #[test]
+    fn point_is_a_valid_geometry_type() {
+        println!("topojson.feature Point is a valid geometry type");
+        // let t = simple_topology(topojson::Geometry::new(TopoJson::Value::Point::new()));
+        // let computed: Geometry<f64> = Object::generate(t, t["objects"]["foo"]);
+        // assert_eq!(computed, Geometry::Point(Point::new(0_f64, 0_f64)));
+    }
+
+    fn simple_topology(object: topojson::Geometry) -> Topology {
+        Topology {
+            arcs: vec![
+                vec![
+                    vec![0_f64, 0_f64],
+                    vec![1_f64, 0_f64],
+                    vec![0_f64, 1_f64],
+                    vec![-1_f64, 0_f64],
+                    vec![0_f64, -1_f64],
+                ],
+                vec![vec![0_f64, 0_f64], vec![1_f64, 0_f64], vec![0_f64, 1_f64]],
+                vec![vec![1_f64, 1_f64], vec![-1_f64, 0_f64], vec![0_f64, -1_f64]],
+                vec![vec![1_f64, 1_f64]],
+                vec![vec![0_f64, 0_f64]],
+            ],
+            objects: vec![NamedGeometry {
+                name: "foo".to_string(),
+                geometry: object,
+            }],
+            bbox: None,
+            transform: Some(TransformParams {
+                scale: [1_f64, 1_f64],
+                translate: [0_f64, 0_f64],
+            }),
+            foreign_members: None,
+        }
+    }
+}
