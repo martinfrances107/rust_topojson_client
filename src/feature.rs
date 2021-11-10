@@ -266,13 +266,16 @@ mod tests {
             t,
             NamedGeometry {
                 name: "a".into(),
-                geometry: topojson::Geometry::new(Value::Point(vec![0_f64, 0_f64])),
+                geometry: topojson::Geometry::new(Value::MultiPoint(vec![vec![0_f64, 0_f64]])),
             },
         );
 
         assert_eq!(
             computed,
-            Some(Geometry::Point(Point(Coordinate { x: 0_f64, y: 0_f64 })))
+            Some(Geometry::MultiPoint(MultiPoint(vec![Point(Coordinate {
+                x: 0_f64,
+                y: 0_f64
+            })])))
         );
     }
 
