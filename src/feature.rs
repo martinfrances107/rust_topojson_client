@@ -436,6 +436,35 @@ mod tests {
         );
     }
 
+    #[test]
+    fn negative_indexes_indicates_revered_coordinates() {
+        println!("topojson.feature Polygon is a valid feature type");
+        let t = simple_topology(topojson::Geometry::new(Value::Polygon(vec![vec![!0_i32]])));
+        let computed: Option<Geometry<f64>> = Builder::<f64>::generate(
+            t,
+            NamedGeometry {
+                name: "foo".into(),
+                geometry: topojson::Geometry::new(Value::Polygon(vec![vec![!0_i32]])),
+            },
+        );
+
+        assert_eq!(
+            computed,
+            Some(Geometry::Polygon(Polygon::new(
+                LineString(vec![
+                    Coordinate { x: 0_f64, y: 0_f64 },
+                    Coordinate { x: 0_f64, y: 1_f64 },
+                    Coordinate { x: 1_f64, y: 1_f64 },
+                    Coordinate { x: 1_f64, y: 0_f64 },
+                    Coordinate { x: 0_f64, y: 0_f64 },
+                ]),
+                vec![]
+            )))
+        );
+    }
+
+    // ... missing tests
+
     fn simple_topology(object: topojson::Geometry) -> Topology {
         Topology {
             arcs: vec![
