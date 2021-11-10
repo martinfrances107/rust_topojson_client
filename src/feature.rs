@@ -331,6 +331,55 @@ mod tests {
         );
     }
 
+    #[test]
+    fn multiline_string_two_coords() {
+        println!("topojson.feature line-strings have at least two coordinates");
+        let t1 = simple_topology(topojson::Geometry::new(Value::LineString(vec![3])));
+        let computed1: Option<Geometry<f64>> = Builder::<f64>::generate(
+            t1,
+            NamedGeometry {
+                name: "foo".into(),
+                geometry: topojson::Geometry::new(Value::LineString(vec![0])),
+            },
+        );
+
+        assert_eq!(
+            computed1,
+            Some(Geometry::LineString(LineString(vec![
+                Coordinate { x: 0_f64, y: 0_f64 },
+                Coordinate { x: 1_f64, y: 0_f64 },
+                Coordinate { x: 1_f64, y: 1_f64 },
+                Coordinate { x: 0_f64, y: 1_f64 },
+                Coordinate { x: 0_f64, y: 0_f64 },
+            ])))
+        );
+
+        let t2 = simple_topology(topojson::Geometry::new(Value::MultiLineString(vec![vec![
+            3,
+        ]])));
+        let computed2: Option<Geometry<f64>> = Builder::<f64>::generate(
+            t2,
+            NamedGeometry {
+                name: "foo".into(),
+                geometry: topojson::Geometry::new(Value::MultiLineString(vec![vec![3], vec![4]])),
+            },
+        );
+
+        assert_eq!(
+            computed2,
+            Some(Geometry::MultiLineString(MultiLineString(vec![
+                LineString(vec![
+                    Coordinate { x: 1_f64, y: 1_f64 },
+                    Coordinate { x: 1_f64, y: 1_f64 },
+                ]),
+                LineString(vec![
+                    Coordinate { x: 0_f64, y: 0_f64 },
+                    Coordinate { x: 0_f64, y: 0_f64 },
+                ]),
+            ])))
+        );
+    }
+
     fn simple_topology(object: topojson::Geometry) -> Topology {
         Topology {
             arcs: vec![
