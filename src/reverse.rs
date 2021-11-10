@@ -1,18 +1,18 @@
 use geo::CoordFloat;
 
-pub(crate) fn reverse<T>(array: &mut Vec<T>, n: usize)
+pub(crate) fn reverse<T>(points: &mut Vec<(T, T)>, n: usize)
 where
     T: CoordFloat,
 {
     let mut t;
-    let mut j = array.len();
+    let mut j = points.len();
     let mut i = j - n;
 
     while i < j {
-        t = array[i];
+        t = points[i];
         i += 1;
-        array[i] = array[j];
-        array[j] = t;
+        points[i] = points[j];
+        points[j] = t;
         j -= 1;
     }
 }

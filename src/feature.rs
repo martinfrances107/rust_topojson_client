@@ -44,26 +44,25 @@ impl<T> Builder<T>
 where
     T: AddAssign<T> + CoordFloat,
 {
-    /// A constructor that can fail to parse.
+    /// A constructor fails topology does not contain a transform.
     #[inline]
-    fn generate(topology: Topology, o: NamedGeometry) -> Option<Geometry<T>>
+    pub fn generate(topology: Topology, o: NamedGeometry) -> Option<Geometry<T>>
     where
         T: 'static + CoordFloat,
     {
-        let transform = match topology.transform {
-            Some(transform_params) => transform::<T>(transform_params),
-            None => {
-                return None;
+        match topology.transform {
+            None => None,
+            Some(transform_params) => {
+                let transform = transform::<T>(transform_params);
+                let mut out = Self {
+                    pd: PhantomData::<T>::default(),
+                    arcs: topology.arcs,
+                    transform_point: transform,
+                };
+
+                Some(out.geometry(o))
             }
-        };
-
-        let mut out = Self {
-            pd: PhantomData::<T>::default(),
-            arcs: topology.arcs,
-            transform_point: transform,
-        };
-
-        Some(out.geometry(o))
+        }
     }
 
     /// Convert the index found in a Geometry object into a point.
@@ -83,8 +82,7 @@ where
         }
 
         if i < 0 {
-            // TODO must fix.
-            //     reverse(points,self.arcs.len());
+            reverse(points, self.arcs.len());
         }
     }
 
@@ -98,7 +96,7 @@ where
     /// points.
     ///
     /// Using the top level arcs array as reference.
-    fn line(&mut self, arcs: &ArcIndexes) -> Vec<(T, T)> {
+    fn line(&mut self, arcs: &[i32]) -> Vec<(T, T)> {
         let mut points: Vec<(T, T)> = Vec::new();
         for a in arcs {
             self.arc(*a, &mut points);
@@ -112,7 +110,7 @@ where
         points
     }
 
-    fn ring(&mut self, arcs: &ArcIndexes) -> Vec<(T, T)> {
+    fn ring(&mut self, arcs: &[i32]) -> Vec<(T, T)> {
         let mut points = self.line(arcs);
         // This may happen if an arc has only two points.
         while points.len() < 4 {
@@ -122,15 +120,13 @@ where
     }
 
     #[inline]
-    fn polygon(&mut self, arcs: &Vec<ArcIndexes>) -> Vec<Vec<(T, T)>> {
-        let tmp: Vec<Vec<(T, T)>> = arcs
-            .iter()
+    fn polygon(&mut self, arcs: &[ArcIndexes]) -> Vec<Vec<(T, T)>> {
+        arcs.iter()
             .map(|x| {
                 let tmp: Vec<(T, T)> = self.ring(x);
                 tmp
             })
-            .collect();
-        tmp
+            .collect()
     }
 
     fn geometry(&mut self, o: NamedGeometry) -> Geometry<T> {
@@ -224,11 +220,8 @@ mod tests {
     #[cfg(test)]
     use pretty_assertions::assert_eq;
     use topojson::NamedGeometry;
-    use topojson::TopoJson;
     use topojson::TransformParams;
     use topojson::Value;
-
-    use super::*;
 
     #[test]
     fn geometry_type_is_preserved() {
@@ -257,21 +250,89 @@ mod tests {
         };
     }
 
-    #[test]
-    fn point_is_a_valid_geometry_type() {
-        println!("topojson.feature Point is a valid geometry type");
-        let t = simple_topology(topojson::Geometry::new(Value::Point(vec![vec![0]])));
-        let computed: Option<Geometry<f64>> = Builder::<f64>::generate(
-            t,
-            NamedGeometry {
-                name: "a".into(),
-                geometry: topojson::Geometry::new(Value::Polygon(vec![vec![0]])),
-            },
-        );
-        // let t = simple_topology(topojson::Geometry::new(TopoJson::Value::Point::new()));
-        // let computed: Geometry<f64> = Object::generate(t, t["objects"]["foo"]);
-        // assert_eq!(computed, Geometry::Point(Point::new(0_f64, 0_f64)));
-    }
+    // #[test]
+    // fn point() {
+    //     println!("topojson.feature Point is a valid geometry type");
+    //     let t = simple_topology(topojson::Geometry::new(Value::Point(vec![0_f64, 0_f64])));
+    //     let computed: Option<Geometry<f64>> = Builder::<f64>::generate(
+    //         t,
+    //         NamedGeometry {
+    //             name: "a".into(),
+    //             geometry: topojson::Geometry::new(Value::Point(vec![0_f64])),
+    //         },
+    //     );
+
+    //     assert_eq!(
+    //         computed,
+    //         Some(Geometry::Point(Point(Coordinate { x: 0_f64, y: 0_f64 })))
+    //     );
+    // }
+
+    // #[test]
+    // fn multipolygon() {
+    //     println!("topojson.feature Point is a valid geometry type");
+    //     let t = simple_topology(topojson::Geometry::new(Value::MultiPoint(vec![vec![
+    //         0_f64, 0_f64,
+    //     ]])));
+    //     let computed: Option<Geometry<f64>> = Builder::<f64>::generate(
+    //         t,
+    //         NamedGeometry {
+    //             name: "a".into(),
+    //             geometry: topojson::Geometry::new(Value::Point(vec![0_f64])),
+    //         },
+    //     );
+
+    //     assert_eq!(
+    //         computed,
+    //         Some(Geometry::Point(Point(Coordinate { x: 0_f64, y: 0_f64 })))
+    //     );
+    // }
+
+    // #[test]
+    // fn linestring() {
+    //     println!("topojson.feature Point is a valid geometry type");
+    // TODO javascript test supplied arc indexes not arrays of points.
+    // let t = simple_topology(topojson::Geometry::new(Value::LineString(vec![
+    //     vec![0, 0],
+    //     vec![1, 0],
+    //     vec![1, 1],
+    //     vec![0, 1],
+    //     vec![0, 0],
+    // ])));
+    // let computed: Option<Geometry<f64>> = Builder::<f64>::generate(
+    //     t,
+    //     NamedGeometry {
+    //         name: "a".into(),
+    //         geometry: topojson::Geometry::new(Value::Point(vec![0_f64])),
+    //     },
+    // );
+
+    // assert_eq!(
+    //     computed,
+    //     Some(Geometry::Point(Point(Coordinate { x: 0_f64, y: 0_f64 })))
+    // );
+    // }
+
+    // #[test]
+    // fn multilinestring() {
+    //     println!("topojson.feature Point is a valid geometry type");
+    //     let t = simple_topology(topojson::Geometry::new(Value::MultiLineString(vec![
+    //         vec![0],
+    //         vec![0],
+    //     ])));
+    //     let computed: Option<Geometry<f64>> = Builder::<f64>::generate(
+    //         t,
+    //         NamedGeometry {
+    //             name: "a".into(),
+    //             geometry: topojson::Geometry::new(Value::Point(vec![0_f64])),
+    //         },
+    //     );
+
+    //     assert_eq!(
+    //         computed,
+    //         Some(Geometry::Point(Point(Coordinate { x: 0_f64, y: 0_f64 })))
+    //     );
+    // }
 
     fn simple_topology(object: topojson::Geometry) -> Topology {
         Topology {
