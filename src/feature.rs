@@ -44,7 +44,7 @@ impl<T> Builder<T>
 where
     T: AddAssign<T> + CoordFloat,
 {
-    /// A constructor fails topology does not contain a transform.
+    /// A constructor that fails when topology does not contain a transform.
     #[inline]
     pub fn generate(topology: Topology, o: NamedGeometry) -> Option<Geometry<T>>
     where
@@ -121,12 +121,7 @@ where
 
     #[inline]
     fn polygon(&mut self, arcs: &[ArcIndexes]) -> Vec<Vec<(T, T)>> {
-        arcs.iter()
-            .map(|x| {
-                let tmp: Vec<(T, T)> = self.ring(x);
-                tmp
-            })
-            .collect()
+        arcs.iter().map(|x| self.ring(x)).collect()
     }
 
     fn geometry(&mut self, o: NamedGeometry) -> Geometry<T> {
@@ -166,14 +161,8 @@ where
                 Geometry::LineString(geo_ls)
             }
             Value::MultiLineString(topo_mls) => {
-                let v_mls: Vec<LineString<T>> = topo_mls
-                    .iter()
-                    .map(|x| {
-                        let tmp = self.line(x);
-                        let ls: LineString<T> = tmp.into();
-                        ls
-                    })
-                    .collect();
+                let v_mls: Vec<LineString<T>> =
+                    topo_mls.iter().map(|x| self.line(x).into()).collect();
                 Geometry::MultiLineString(MultiLineString(v_mls))
             }
             Value::Polygon(topo_polygon) => {
