@@ -200,6 +200,11 @@ mod tests {
     use super::*;
     use geo::Coordinate;
     use geo::Geometry;
+    use geo::GeometryCollection;
+    use geo::LineString;
+    use geo::MultiLineString;
+    use geo::MultiPolygon;
+    use geo::Point;
     use geo::Polygon;
     use pretty_assertions::assert_eq;
     use topojson::NamedGeometry;
@@ -448,12 +453,6 @@ mod tests {
     //     );
     // }
 
-    //   tape("topojson.feature top-level geometry collections are mapped to feature collections", function (test) {
-    //     var t = simpleTopology({ type: "GeometryCollection", geometries: [{ type: "MultiPolygon", arcs: [[[0]]] }] });
-    //     test.deepEqual(topojson.feature(t, t.objects.foo), { type: "FeatureCollection", features: [{ type: "Feature", properties: {}, geometry: { type: "MultiPolygon", coordinates: [[[[0, 0], [1, 0], [1, 1], [0, 1], [0, 0]]]] } }] });
-    //     test.end();
-    //   });
-
     #[test]
     fn gc_are_mapped_to_fc() {
         println!(
@@ -484,6 +483,33 @@ mod tests {
                     ]),
                     vec![]
                 )]))
+            ])))
+        );
+    }
+
+    #[test]
+    fn gc_nested() {
+        println!("topojson.feature geometry collections can be nested",);
+
+        let t = simple_topology(topojson::Geometry::new(Value::GeometryCollection(vec![
+            topojson::Geometry::new(Value::GeometryCollection(vec![topojson::Geometry::new(
+                Value::Point(vec![0_f64, 0_f64]),
+            )])),
+        ])));
+
+        let computed = Builder::<f64>::generate(
+            &t,
+            Value::GeometryCollection(vec![topojson::Geometry::new(Value::GeometryCollection(
+                vec![topojson::Geometry::new(Value::Point(vec![0_f64, 0_f64]))],
+            ))]),
+        );
+
+        assert_eq!(
+            computed,
+            Some(Geometry::GeometryCollection(GeometryCollection(vec![
+                Geometry::GeometryCollection(GeometryCollection(vec![Geometry::Point(Point(
+                    Coordinate { x: 0_f64, y: 0_f64 }
+                ))]))
             ])))
         );
     }
