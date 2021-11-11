@@ -318,43 +318,40 @@ mod tests {
         );
     }
 
-    // #[test]
-    // fn line_string_two_coords() {
-    //     println!("topojson.feature line-strings have at least two coordinates");
-    //     let t1 = simple_topology(topojson::Geometry::new(Value::LineString(vec![3])));
-    //     let computed1: Option<Geometry<f64>> = Builder::<f64>::generate_from_name(&t1, &"foo");
+    #[test]
+    fn line_string_two_coords() {
+        println!("topojson.feature line-strings have at least two coordinates");
+        let t1 = simple_topology(topojson::Geometry::new(Value::LineString(vec![3])));
+        let computed1: Option<Geometry<f64>> = Builder::<f64>::generate_from_name(&t1, &"foo");
 
-    //     assert_eq!(
-    //         computed1,
-    //         Some(Geometry::LineString(LineString(vec![
-    //             Coordinate { x: 0_f64, y: 0_f64 },
-    //             Coordinate { x: 1_f64, y: 0_f64 },
-    //             Coordinate { x: 1_f64, y: 1_f64 },
-    //             Coordinate { x: 0_f64, y: 1_f64 },
-    //             Coordinate { x: 0_f64, y: 0_f64 },
-    //         ])))
-    //     );
+        assert_eq!(
+            computed1,
+            Some(Geometry::LineString(LineString(vec![
+                Coordinate { x: 1_f64, y: 1_f64 },
+                Coordinate { x: 1_f64, y: 1_f64 },
+            ])))
+        );
 
-    //     let t2 = simple_topology(topojson::Geometry::new(Value::MultiLineString(vec![
-    //         vec![3],
-    //         vec![4],
-    //     ])));
-    //     let computed2 = Builder::<f64>::generate_from_name(&t2, &"foo");
+        let t2 = simple_topology(topojson::Geometry::new(Value::MultiLineString(vec![
+            vec![3],
+            vec![4],
+        ])));
+        let computed2 = Builder::<f64>::generate_from_name(&t2, &"foo");
 
-    //     assert_eq!(
-    //         computed2,
-    //         Some(Geometry::MultiLineString(MultiLineString(vec![
-    //             LineString(vec![
-    //                 Coordinate { x: 1_f64, y: 1_f64 },
-    //                 Coordinate { x: 1_f64, y: 1_f64 },
-    //             ]),
-    //             LineString(vec![
-    //                 Coordinate { x: 0_f64, y: 0_f64 },
-    //                 Coordinate { x: 0_f64, y: 0_f64 },
-    //             ]),
-    //         ])))
-    //     );
-    // }
+        assert_eq!(
+            computed2,
+            Some(Geometry::MultiLineString(MultiLineString(vec![
+                LineString(vec![
+                    Coordinate { x: 1_f64, y: 1_f64 },
+                    Coordinate { x: 1_f64, y: 1_f64 },
+                ]),
+                LineString(vec![
+                    Coordinate { x: 0_f64, y: 0_f64 },
+                    Coordinate { x: 0_f64, y: 0_f64 },
+                ]),
+            ])))
+        );
+    }
 
     #[test]
     fn polygon() {

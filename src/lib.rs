@@ -18,7 +18,7 @@ extern crate pretty_assertions;
 extern crate topojson;
 
 /// function feature() and various From implementations.
-mod feature;
+pub mod feature;
 
 /// function reverse() and unit tests.
 mod reverse;
