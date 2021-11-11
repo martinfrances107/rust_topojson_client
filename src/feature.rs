@@ -42,11 +42,27 @@ where
 
 impl<T> Builder<T>
 where
-    T: AddAssign<T> + CoordFloat,
+    T: 'static + AddAssign<T> + CoordFloat,
 {
-    /// A constructor that fails when topology does not contain a transform.
+    /// Given a object name find convert and return a Geometry object.
+    ///
+    /// None: -
+    ///   * The topology tranform is ommitted.
+    ///   * The object subsection does not contain the name.
     #[inline]
-    pub fn generate(topology: &Topology, o: Value) -> Option<Geometry<T>>
+    pub fn generate_from_name(topology: &Topology, name: &str) -> Option<Geometry<T>> {
+        match topology.objects.iter().find(|x| x.name == name) {
+            Some(ng) => Builder::generate(topology, &ng.geometry.value),
+            None => None,
+        }
+    }
+
+    /// Given a json gemetry value apply a transform and convert.
+    ///
+    /// None: -
+    ///     The topology transform is ommitted.
+    #[inline]
+    pub fn generate(topology: &Topology, o: &Value) -> Option<Geometry<T>>
     where
         T: 'static + CoordFloat,
     {
@@ -60,7 +76,7 @@ where
                     transform_point: transform,
                 };
 
-                Some(out.geometry(&o))
+                Some(out.geometry(o))
             }
         }
     }
@@ -215,7 +231,7 @@ mod tests {
     fn geometry_type_is_preserved() {
         println!("topojson.feature the geometry type is preserved");
         let t = simple_topology(topojson::Geometry::new(Value::Polygon(vec![vec![0]])));
-        let computed = Builder::<f64>::generate(&t, Value::Polygon(vec![vec![0]]));
+        let computed = Builder::<f64>::generate_from_name(&t, &"foo");
 
         match computed {
             Some(g) => match g {
@@ -236,7 +252,7 @@ mod tests {
     fn point() {
         println!("topojson.feature Point is a valid geometry type");
         let t = simple_topology(topojson::Geometry::new(Value::Point(vec![0_f64, 0_f64])));
-        let computed = Builder::<f64>::generate(&t, Value::Point(vec![0_f64, 0_f64]));
+        let computed = Builder::<f64>::generate_from_name(&t, &"foo");
 
         assert_eq!(
             computed,
@@ -250,7 +266,7 @@ mod tests {
         let t = simple_topology(topojson::Geometry::new(Value::MultiPoint(vec![vec![
             0_f64, 0_f64,
         ]])));
-        let computed = Builder::<f64>::generate(&t, Value::MultiPoint(vec![vec![0_f64, 0_f64]]));
+        let computed = Builder::<f64>::generate_from_name(&t, &"foo");
 
         assert_eq!(
             computed,
@@ -266,7 +282,7 @@ mod tests {
         println!("topojson.feature LineString is a valid geometry type");
         // TODO javascript test supplied arc indexes not arrays of points.
         let t = simple_topology(topojson::Geometry::new(Value::LineString(vec![0])));
-        let computed = Builder::<f64>::generate(&t, Value::LineString(vec![0]));
+        let computed = Builder::<f64>::generate_from_name(&t, &"foo");
 
         assert_eq!(
             computed,
@@ -286,7 +302,7 @@ mod tests {
         let t = simple_topology(topojson::Geometry::new(Value::MultiLineString(vec![vec![
             0,
         ]])));
-        let computed = Builder::<f64>::generate(&t, Value::MultiLineString(vec![vec![0]]));
+        let computed = Builder::<f64>::generate_from_name(&t, &"foo");
 
         assert_eq!(
             computed,
@@ -302,51 +318,49 @@ mod tests {
         );
     }
 
-    #[test]
-    fn line_string_two_coords() {
-        println!("topojson.feature line-strings have at least two coordinates");
-        let t1 = simple_topology(topojson::Geometry::new(Value::LineString(vec![3])));
-        let computed1: Option<Geometry<f64>> =
-            Builder::<f64>::generate(&t1, Value::LineString(vec![0]));
+    // #[test]
+    // fn line_string_two_coords() {
+    //     println!("topojson.feature line-strings have at least two coordinates");
+    //     let t1 = simple_topology(topojson::Geometry::new(Value::LineString(vec![3])));
+    //     let computed1: Option<Geometry<f64>> = Builder::<f64>::generate_from_name(&t1, &"foo");
 
-        assert_eq!(
-            computed1,
-            Some(Geometry::LineString(LineString(vec![
-                Coordinate { x: 0_f64, y: 0_f64 },
-                Coordinate { x: 1_f64, y: 0_f64 },
-                Coordinate { x: 1_f64, y: 1_f64 },
-                Coordinate { x: 0_f64, y: 1_f64 },
-                Coordinate { x: 0_f64, y: 0_f64 },
-            ])))
-        );
+    //     assert_eq!(
+    //         computed1,
+    //         Some(Geometry::LineString(LineString(vec![
+    //             Coordinate { x: 0_f64, y: 0_f64 },
+    //             Coordinate { x: 1_f64, y: 0_f64 },
+    //             Coordinate { x: 1_f64, y: 1_f64 },
+    //             Coordinate { x: 0_f64, y: 1_f64 },
+    //             Coordinate { x: 0_f64, y: 0_f64 },
+    //         ])))
+    //     );
 
-        let t2 = simple_topology(topojson::Geometry::new(Value::MultiLineString(vec![vec![
-            3,
-        ]])));
-        let computed2 =
-            Builder::<f64>::generate(&t2, Value::MultiLineString(vec![vec![3], vec![4]]));
+    //     let t2 = simple_topology(topojson::Geometry::new(Value::MultiLineString(vec![
+    //         vec![3],
+    //         vec![4],
+    //     ])));
+    //     let computed2 = Builder::<f64>::generate_from_name(&t2, &"foo");
 
-        assert_eq!(
-            computed2,
-            Some(Geometry::MultiLineString(MultiLineString(vec![
-                LineString(vec![
-                    Coordinate { x: 1_f64, y: 1_f64 },
-                    Coordinate { x: 1_f64, y: 1_f64 },
-                ]),
-                LineString(vec![
-                    Coordinate { x: 0_f64, y: 0_f64 },
-                    Coordinate { x: 0_f64, y: 0_f64 },
-                ]),
-            ])))
-        );
-    }
+    //     assert_eq!(
+    //         computed2,
+    //         Some(Geometry::MultiLineString(MultiLineString(vec![
+    //             LineString(vec![
+    //                 Coordinate { x: 1_f64, y: 1_f64 },
+    //                 Coordinate { x: 1_f64, y: 1_f64 },
+    //             ]),
+    //             LineString(vec![
+    //                 Coordinate { x: 0_f64, y: 0_f64 },
+    //                 Coordinate { x: 0_f64, y: 0_f64 },
+    //             ]),
+    //         ])))
+    //     );
+    // }
 
     #[test]
     fn polygon() {
         println!("topojson.feature Polygon is a valid feature type");
         let t = simple_topology(topojson::Geometry::new(Value::Polygon(vec![vec![0]])));
-        let computed: Option<Geometry<f64>> =
-            Builder::<f64>::generate(&t, Value::Polygon(vec![vec![0]]));
+        let computed: Option<Geometry<f64>> = Builder::<f64>::generate_from_name(&t, &"foo");
 
         assert_eq!(
             computed,
@@ -369,7 +383,7 @@ mod tests {
         let t = simple_topology(topojson::Geometry::new(Value::MultiPolygon(vec![vec![
             vec![0],
         ]])));
-        let computed = Builder::<f64>::generate(&t, Value::MultiPolygon(vec![vec![vec![0]]]));
+        let computed = Builder::<f64>::generate_from_name(&t, &"foo");
 
         assert_eq!(
             computed,
@@ -386,72 +400,59 @@ mod tests {
         );
     }
 
-    // tape("topojson.feature polygons are closed, with at least four coordinates", function (test) {
-    //     var topology = {
-    //       type: "Topology",
-    //       transform: { scale: [1, 1], translate: [0, 0] },
-    //       objects: { foo: { type: "Polygon", arcs: [[0]] }, bar: { type: "Polygon", arcs: [[0, 1]] } },
-    //       arcs: [[[0, 0], [1, 1]], [[1, 1], [-1, -1]]]
-    //     };
-    //     test.deepEqual(topojson.feature(topology, topology.objects.foo).geometry.coordinates, [[[0, 0], [1, 1], [0, 0], [0, 0]]]);
-    //     test.deepEqual(topojson.feature(topology, topology.objects.bar).geometry.coordinates, [[[0, 0], [1, 1], [0, 0], [0, 0]]]);
-    //     test.end();
-    //   });
-    // #[test]
-    // fn polygons_are_closed_with_at_least_four_coordinates() {
-    //     println!("topojson.feature polygons are closed, with at least four coordinates");
-    //     let topology = Topology {
-    //         bbox: None,
-    //         objects: vec![
-    //             NamedGeometry {
-    //                 name: "foo".to_string(),
-    //                 geometry: topojson::Geometry::new(Value::Polygon(vec![vec![0]])),
-    //             },
-    //             NamedGeometry {
-    //                 name: "bar".to_string(),
-    //                 geometry: topojson::Geometry::new(Value::Polygon(vec![vec![0], vec![1]])),
-    //             },
-    //         ],
-    //         transform: Some(TransformParams {
-    //             scale: [1_f64, 1_f64],
-    //             translate: [0_f64, 0_f64],
-    //         }),
-    //         arcs: vec![
-    //             vec![vec![0_f64, 0_f64], vec![1_f64, 1_f64]],
-    //             vec![vec![1_f64, 1_f64], vec![-1_f64, -1_f64]],
-    //         ],
-    //         foreign_members: None,
-    //     };
-    //     let computed: Option<Geometry<f64>> =
-    //         Builder::generate(&topology, Value::Polygon(vec![vec![0], vec![1]]));
-    //     assert_eq!(
-    //         computed,
-    //         Some(Geometry::Polygon(Polygon::new(
-    //             LineString(vec![
-    //                 Coordinate { x: 0_f64, y: 0_f64 },
-    //                 Coordinate { x: 1_f64, y: 1_f64 },
-    //                 Coordinate { x: 0_f64, y: 0_f64 },
-    //                 Coordinate { x: 0_f64, y: 0_f64 }
-    //             ]),
-    //             vec![]
-    //         )))
-    //     );
+    #[test]
+    fn polygons_are_closed_with_at_least_four_coordinates() {
+        println!("topojson.feature polygons are closed, with at least four coordinates");
+        let topology = Topology {
+            bbox: None,
+            objects: vec![
+                NamedGeometry {
+                    name: "foo".to_string(),
+                    geometry: topojson::Geometry::new(Value::Polygon(vec![vec![0]])),
+                },
+                NamedGeometry {
+                    name: "bar".to_string(),
+                    geometry: topojson::Geometry::new(Value::Polygon(vec![vec![0, 1]])),
+                },
+            ],
+            transform: Some(TransformParams {
+                scale: [1_f64, 1_f64],
+                translate: [0_f64, 0_f64],
+            }),
+            arcs: vec![
+                vec![vec![0_f64, 0_f64], vec![1_f64, 1_f64]],
+                vec![vec![1_f64, 1_f64], vec![-1_f64, -1_f64]],
+            ],
+            foreign_members: None,
+        };
+        let computed: Option<Geometry<f64>> = Builder::generate_from_name(&topology, &"foo");
+        assert_eq!(
+            computed,
+            Some(Geometry::Polygon(Polygon::new(
+                LineString(vec![
+                    Coordinate { x: 0_f64, y: 0_f64 },
+                    Coordinate { x: 1_f64, y: 1_f64 },
+                    Coordinate { x: 0_f64, y: 0_f64 },
+                    Coordinate { x: 0_f64, y: 0_f64 }
+                ]),
+                vec![]
+            )))
+        );
 
-    //     let computed: Option<Geometry<f64>> =
-    //         Builder::generate(&topology, Value::Polygon(vec![vec![0], vec![1]]));
-    //     assert_eq!(
-    //         computed,
-    //         Some(Geometry::Polygon(Polygon::new(
-    //             LineString(vec![
-    //                 Coordinate { x: 0_f64, y: 0_f64 },
-    //                 Coordinate { x: 1_f64, y: 1_f64 },
-    //                 Coordinate { x: 0_f64, y: 0_f64 },
-    //                 Coordinate { x: 0_f64, y: 0_f64 }
-    //             ]),
-    //             vec![]
-    //         )))
-    //     );
-    // }
+        let computed: Option<Geometry<f64>> = Builder::generate_from_name(&topology, &"bar");
+        assert_eq!(
+            computed,
+            Some(Geometry::Polygon(Polygon::new(
+                LineString(vec![
+                    Coordinate { x: 0_f64, y: 0_f64 },
+                    Coordinate { x: 1_f64, y: 1_f64 },
+                    Coordinate { x: 0_f64, y: 0_f64 },
+                    Coordinate { x: 0_f64, y: 0_f64 }
+                ]),
+                vec![]
+            )))
+        );
+    }
 
     #[test]
     fn gc_are_mapped_to_fc() {
@@ -463,12 +464,7 @@ mod tests {
             topojson::Geometry::new(Value::MultiPolygon(vec![vec![vec![0]]])),
         ])));
 
-        let computed = Builder::<f64>::generate(
-            &t,
-            Value::GeometryCollection(vec![topojson::Geometry::new(Value::MultiPolygon(vec![
-                vec![vec![0]],
-            ]))]),
-        );
+        let computed = Builder::<f64>::generate_from_name(&t, &"foo");
 
         assert_eq!(
             computed,
@@ -497,12 +493,7 @@ mod tests {
             )])),
         ])));
 
-        let computed = Builder::<f64>::generate(
-            &t,
-            Value::GeometryCollection(vec![topojson::Geometry::new(Value::GeometryCollection(
-                vec![topojson::Geometry::new(Value::Point(vec![0_f64, 0_f64]))],
-            ))]),
-        );
+        let computed = Builder::<f64>::generate_from_name(&t, &"foo");
 
         assert_eq!(
             computed,
@@ -518,7 +509,7 @@ mod tests {
     fn negative_indexes_indicates_revered_coordinates() {
         println!("topojson.feature Polygon is a valid feature type");
         let t = simple_topology(topojson::Geometry::new(Value::Polygon(vec![vec![!0_i32]])));
-        let computed = Builder::<f64>::generate(&t, Value::Polygon(vec![vec![!0_i32]]));
+        let computed = Builder::<f64>::generate_from_name(&t, &"foo");
 
         assert_eq!(
             computed,
