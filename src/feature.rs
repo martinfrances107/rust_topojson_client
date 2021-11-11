@@ -23,7 +23,8 @@ use crate::transform::TransformFn;
 
 #[derive(Derivative)]
 #[derivative(Debug)]
-struct Builder<T>
+/// State holds data extracted from a Topological object.
+pub struct Builder<T>
 where
     T: AddAssign<T> + CoordFloat,
 {
@@ -32,13 +33,6 @@ where
     #[derivative(Debug = "ignore")]
     transform_point: TransformFn<T>,
 }
-
-// impl From<(Topology, String)> for Object {
-//     #[inline]
-//     fn from(tuple: (Topology, String)) -> Self {
-//         Object::feature(tuple.0, tuple.0[tuple.1]).expect("failed to parse")
-//     }
-// }
 
 impl<T> Builder<T>
 where
