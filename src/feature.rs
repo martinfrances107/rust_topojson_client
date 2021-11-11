@@ -97,7 +97,7 @@ where
     ///
     /// Using the top level arcs array as reference.
     fn line(&mut self, arcs: &[i32]) -> Vec<(T, T)> {
-        let mut points: Vec<(T, T)> = Vec::new();
+        let mut points: Vec<(T, T)> = Vec::with_capacity(arcs.len() + 1);
         for a in arcs {
             self.arc(*a, &mut points);
         }
