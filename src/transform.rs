@@ -9,7 +9,7 @@ pub type TransformFn<T> = Box<dyn FnMut(&[f64], usize) -> Vec<T>>;
 
 /// Given a set of transform parameters return a tranform function that transforms
 /// position into a Vec<f64>
-pub fn generate<T>(tp: TransformParams) -> TransformFn<T>
+pub fn generate<T>(tp: &TransformParams) -> TransformFn<T>
 where
     T: 'static + AddAssign<T> + CoordFloat,
 {
@@ -74,7 +74,7 @@ mod transform_tests {
     #[test]
     fn returns_a_point_transform_function() {
         println!("topojson.transform(topology) returns a point-transform function if transform is defined");
-        let mut transform = generate::<f64>(TransformParams {
+        let mut transform = generate::<f64>(&TransformParams {
             scale: [2_f64, 3_f64],
             translate: [4_f64, 5_f64],
         });
@@ -96,7 +96,7 @@ mod transform_tests {
     #[test]
     fn preserves_extra_dimensions() {
         println!("transform(point) preserves extra dimensions");
-        let mut transform = generate::<f64>(TransformParams {
+        let mut transform = generate::<f64>(&TransformParams {
             scale: [2_f64, 3_f64],
             translate: [4_f64, 5_f64],
         });
@@ -109,7 +109,7 @@ mod transform_tests {
     #[test]
     fn transforms_individual_points() {
         println!("transform(point) transforms individual points");
-        let mut transform = generate::<f64>(TransformParams {
+        let mut transform = generate::<f64>(&TransformParams {
             scale: [2_f64, 3_f64],
             translate: [4_f64, 5_f64],
         });
@@ -121,7 +121,7 @@ mod transform_tests {
     #[test]
     fn transforms_delta_encoded_arcs() {
         println!("transform(point, index) transforms delta-encoded arcs");
-        let mut transform = generate::<f64>(TransformParams {
+        let mut transform = generate::<f64>(&TransformParams {
             scale: [2_f64, 3_f64],
             translate: [4_f64, 5_f64],
         });
@@ -136,7 +136,7 @@ mod transform_tests {
     #[test]
     fn transforms_mutliple_delta_encoded_arcs() {
         println!("transform(point, index) transforms delta-encoded arcs");
-        let mut transform = generate::<f64>(TransformParams {
+        let mut transform = generate::<f64>(&TransformParams {
             scale: [2_f64, 3_f64],
             translate: [4_f64, 5_f64],
         });
