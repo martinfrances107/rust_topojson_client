@@ -7,7 +7,6 @@ extern crate topojson;
 mod world_test {
 
     use std::fs::File;
-    use std::io::Read;
 
     use geo::{Geometry, GeometryCollection};
     use rust_topojson_client::feature::Builder;
@@ -17,13 +16,10 @@ mod world_test {
     /// can be extracted from the "land" object within the map.
     #[test]
     pub fn object_decode() {
-        let mut file =
-            File::open("./tests/world-atlas/world/50m.json").expect("File did not open.");
-        let mut contents = String::new();
-        file.read_to_string(&mut contents)
-            .expect("Could not read file.");
-
-        let topology: Topology = serde_json::from_str(&contents).expect("Failed to read as json.");
+        let file =
+            File::open("./tests/world-atlas/world/50m.json").expect("File should open read only.");
+        let topology: Topology =
+            serde_json::from_reader(file).expect("File should be parse as JSON.");
 
         match Builder::<f64>::generate_from_name(&topology, &"land") {
             Some(Geometry::GeometryCollection(GeometryCollection(v_geometry))) => {
