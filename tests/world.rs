@@ -39,21 +39,13 @@ mod world_test {
         };
 
         // TODO: This fails to parse .. overflows in reverse()
-        // match Builder::<f64>::generate_from_name(&topology, &"countries") {
-        //     Some(Geometry::GeometryCollection(GeometryCollection(v_geometry))) => {
-        //         assert_eq!(v_geometry.len(), 241);
-        //         match &v_geometry[0] {
-        //             Geometry::MultiPolygon(mp) => {
-        //                 assert_eq!(mp.0.len(), 1428_usize);
-        //             }
-        //             _ => {
-        //                 assert!(false, "Faile to decode Multipoloygon")
-        //             }
-        //         }
-        //     }
-        //     _ => {
-        //         assert!(false, "failed to extract a vector of geometries");
-        //     }
-        // };
+        match Builder::<f64>::generate_from_name(&topology, &"countries") {
+            Some(Geometry::GeometryCollection(GeometryCollection(v_geometry))) => {
+                assert_eq!(v_geometry.len(), 241);
+            }
+            _ => {
+                assert!(false, "failed to extract a vector of geometries");
+            }
+        };
     }
 }
