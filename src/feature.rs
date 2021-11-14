@@ -85,14 +85,15 @@ where
 
         // As per spec. negative indicies are bit wise NOT converted.
         let index = if i < 0 { !(i) } else { i } as usize;
-        // let n = self.arcs.len();
-        for (k, v) in self.arcs[index].iter().enumerate() {
+        let a = &self.arcs[index];
+        let n = a.len();
+        for (k, v) in a.iter().enumerate() {
             let t = (self.transform_point)(v, k);
             points.push((t[0], t[1]));
         }
 
         if i < 0 {
-            reverse(points, self.arcs.len());
+            reverse(points, n);
         }
     }
 
