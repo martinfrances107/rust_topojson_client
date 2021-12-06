@@ -38,7 +38,6 @@ mod world_test {
             }
         };
 
-        // TODO: This fails to parse .. overflows in reverse()
         match Builder::<f64>::generate_from_name(&topology, &"countries") {
             Some(Geometry::GeometryCollection(GeometryCollection(v_geometry))) => {
                 assert_eq!(v_geometry.len(), 241);

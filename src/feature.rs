@@ -497,6 +497,48 @@ mod tests {
         );
     }
 
+    // tape("topojson.feature top-level geometry collections do not have ids, but second-level geometry collections can", function(test) {
+    //     var t = simpleTopology({type: "GeometryCollection", id: "collection", geometries: [{type: "GeometryCollection", id: "feature", geometries: [{type: "Point", id: "geometry", coordinates: [0, 0]}]}]});
+    //     test.deepEqual(topojson.feature(t, t.objects.foo), {type: "FeatureCollection", features: [{type: "Feature", id: "feature", properties: {}, geometry: {type: "GeometryCollection", geometries: [{type: "Point", coordinates: [0, 0]}]}}]});
+    //     test.end();
+    //   });
+
+    //   tape("topojson.feature top-level geometry collections do not have properties, but second-level geometry collections can", function(test) {
+    //     var t = simpleTopology({type: "GeometryCollection", properties: {collection: true}, geometries: [{type: "GeometryCollection", properties: {feature: true}, geometries: [{type: "Point", properties: {geometry: true}, coordinates: [0, 0]}]}]});
+    //     test.deepEqual(topojson.feature(t, t.objects.foo), {type: "FeatureCollection", features: [{type: "Feature", properties: {feature: true}, geometry: {type: "GeometryCollection", geometries: [{type: "Point", coordinates: [0, 0]}]}}]});
+    //     test.end();
+    //   });
+
+    //   tape("topojson.feature the object id is promoted to feature id", function(test) {
+    //     var t = simpleTopology({id: "foo", type: "Polygon", arcs: [[0]]});
+    //     test.equal(topojson.feature(t, t.objects.foo).id, "foo");
+    //     test.end();
+    //   });
+
+    //   tape("topojson.feature any object properties are promoted to feature properties", function(test) {
+    //     var t = simpleTopology({type: "Polygon", properties: {color: "orange", size: 42}, arcs: [[0]]});
+    //     test.deepEqual(topojson.feature(t, t.objects.foo).properties, {color: "orange", size: 42});
+    //     test.end();
+    //   });
+
+    //   tape("topojson.feature the object id is optional", function(test) {
+    //     var t = simpleTopology({type: "Polygon", arcs: [[0]]});
+    //     test.equal(topojson.feature(t, t.objects.foo).id, undefined);
+    //     test.end();
+    //   });
+
+    //   tape("topojson.feature object properties are created if missing", function(test) {
+    //     var t = simpleTopology({type: "Polygon", arcs: [[0]]});
+    //     test.deepEqual(topojson.feature(t, t.objects.foo).properties, {});
+    //     test.end();
+    //   });
+
+    //   tape("topojson.feature arcs are converted to coordinates", function(test) {
+    //     var t = simpleTopology({type: "Polygon", arcs: [[0]]});
+    //     test.deepEqual(topojson.feature(t, t.objects.foo).geometry.coordinates, [[[0, 0], [1, 0], [1, 1], [0, 1], [0, 0]]]);
+    //     test.end();
+    //   });
+
     #[test]
     fn negative_indexes_indicates_revered_coordinates() {
         println!("topojson.feature Polygon is a valid feature type");
@@ -518,7 +560,7 @@ mod tests {
         );
     }
 
-    // ... missing tests
+    // TODO missing tests
 
     fn simple_topology(object: topojson::Geometry) -> Topology {
         Topology {
