@@ -13,11 +13,12 @@ The only feature extraction section of this library has been ported.
 
 ## New integration tests.
 
+ Additional tests has been added regarding the extraction of an MultiPolygon object named 'land'
+
  see :-
  test/world.rs
  tests/world-atlas/world/50m.json.
 
- Additional tests has been added regarding the extraction of an MultiPolygon object named 'land'
 
 
 ## TODO

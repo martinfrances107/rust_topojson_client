@@ -3,6 +3,7 @@ extern crate geo;
 extern crate rust_topojson_client;
 extern crate topojson;
 
+#[cfg(not(tarpaulin_include))]
 #[cfg(test)]
 mod world_test {
 
