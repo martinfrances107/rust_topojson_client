@@ -17,8 +17,12 @@ extern crate pretty_assertions;
 
 extern crate topojson;
 
+/// Bounding Box.
+mod bbox;
+mod bisect;
 /// function feature() and various From implementations.
 pub mod feature;
+pub mod neighbors;
 
 /// function reverse() and unit tests.
 mod reverse;
