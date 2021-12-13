@@ -34,10 +34,11 @@ impl Builder {
     ///   * The object subsection does not contain the name.
     #[inline]
     pub fn generate_from_name(topology: &Topology, name: &str) -> Option<Geometry<f64>> {
-        match topology.objects.iter().find(|x| x.name == name) {
-            Some(ng) => Some(Builder::generate(topology, &ng.geometry.value)),
-            None => None,
-        }
+        topology
+            .objects
+            .iter()
+            .find(|x| x.name == name)
+            .map(|ng| Builder::generate(topology, &ng.geometry.value))
     }
 
     /// Given a json gemetry value apply a transform and convert.
