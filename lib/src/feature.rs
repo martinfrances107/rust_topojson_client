@@ -356,7 +356,7 @@ mod feature_tests {
 
     #[test]
     fn multipolygon() {
-        println!("topojson.feature Polygon is a valid feature type");
+        println!("topojson.feature MultiPolygon is a valid feature type");
         let t = simple_topology(topojson::Geometry::new(Value::MultiPolygon(vec![vec![
             vec![0],
         ]])));
@@ -526,7 +526,7 @@ mod feature_tests {
 
     #[test]
     fn negative_indexes_indicates_revered_coordinates() {
-        println!("topojson.feature Polygon is a valid feature type");
+        println!("topojson.feature negative arc indexes indicate reversed coordinates");
         let t = simple_topology(topojson::Geometry::new(Value::Polygon(vec![vec![!0_i32]])));
         let computed = Builder::generate_from_name(&t, &"foo");
 
