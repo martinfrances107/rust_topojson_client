@@ -86,9 +86,10 @@ fn write_list(topo: &Topology) {
 fn write(topo: &Topology) -> io::Result<()> {
     let name = "countries";
 
-    let not_found = topo.objects.iter().find(|ng| ng.name == name).is_none();
-    println!("found {}", not_found);
-    if not_found {
+    // let not_found = topo.objects.iter().find(|ng| ng.name == name).is_none();
+    let has_object = topo.objects.iter().any(|ng| ng.name == name);
+    println!("has_object {}", has_object);
+    if !has_object {
         panic!("error: object {} not found", name)
     }
 

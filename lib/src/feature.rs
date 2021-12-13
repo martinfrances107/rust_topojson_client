@@ -191,7 +191,7 @@ impl Builder {
 
 #[cfg(not(tarpaulin_include))]
 #[cfg(test)]
-mod tests {
+mod feature_tests {
 
     use super::*;
     use geo::Coordinate;
