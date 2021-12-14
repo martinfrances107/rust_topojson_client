@@ -74,9 +74,13 @@ impl BBox {
             Value::Point(p) => {
                 self.bbox_point(p);
             }
-            Value::MultiPoint(mp) => {}
+            Value::MultiPoint(mp) => {
+                for p in mp {
+                    self.bbox_point(p)
+                }
+            }
             _ => {
-                unimplemented!("Can I skip this");
+                // unimplemented!("Can I skip this?");
             }
         }
     }
@@ -85,14 +89,14 @@ impl BBox {
 #[cfg(not(tarpaulin_include))]
 #[cfg(test)]
 mod bbox_tests {
+    use std::env;
     use std::fs::File;
     use std::io::Read;
-
     extern crate serde;
-
     use pretty_assertions::assert_eq;
+    use topojson::Topology;
 
-    use super::*;
+    use super::BBox;
 
     #[test]
     fn ignores_the_exiting_bbox() {
@@ -119,12 +123,12 @@ mod bbox_tests {
     fn computes_for_quantized_topology() {
         println!("topojson.bbox(topology) computes the bbox for a quantized topology, if missing");
         let mut file =
-            File::open("./tests/topojson/polygon-q1e4.json").expect("could not load json file.");
+            File::open("./tests/topojson/polygon-q1e4.json").expect("Could not load json file.");
         let mut data = String::new();
         file.read_to_string(&mut data)
-            .expect("did not read file correctly.");
+            .expect("Did not read file correctly.");
 
-        let topology: Topology = serde_json::from_str(&data).expect("did not parse correcly");
+        let topology: Topology = serde_json::from_str(&data).expect("Did not parse correcly.");
         assert_eq!(BBox::calc(&topology), [0_f64, 0_f64, 10_f64, 10_f64]);
     }
 
@@ -134,12 +138,12 @@ mod bbox_tests {
             "topojson.bbox(topology) computes the bbox for a non-quantized topology, if missing"
         );
         let mut file =
-            File::open("./tests/topojson/polygon.json").expect("could not load json file.");
+            File::open("./tests/topojson/polygon.json").expect("Could not load json file.");
         let mut data = String::new();
         file.read_to_string(&mut data)
-            .expect("did not read file correctly.");
+            .expect("Did not read file correctly.");
 
-        let topology: Topology = serde_json::from_str(&data).expect("did not parse correcly");
+        let topology: Topology = serde_json::from_str(&data).expect("Did not parse correcly.");
         assert_eq!(BBox::calc(&topology), [0_f64, 0_f64, 10_f64, 10_f64]);
     }
 
@@ -147,25 +151,29 @@ mod bbox_tests {
     fn computes_the_bbox_considers_points() {
         println!("topojson.bbox(topology) considers points");
         let mut file =
-            File::open("./tests/topojson/point.json").expect("could not load json file.");
+            File::open("./tests/topojson/point.json").expect("Could not load json file.");
         let mut data = String::new();
         file.read_to_string(&mut data)
             .expect("did not read file correctly.");
 
-        let topology: Topology = serde_json::from_str(&data).expect("did not parse correcly");
+        let topology: Topology = serde_json::from_str(&data).expect("Did not parse correcly.");
         assert_eq!(BBox::calc(&topology), [0_f64, 0_f64, 10_f64, 10_f64]);
     }
 
     #[test]
     fn considers_multipoints() {
         println!("topojson.bbox(topology) considers multipoints");
+
+        let path = env::current_dir().unwrap();
+        println!("The current directory is {}", path.display());
+
         let mut file =
-            File::open("./tests/topojson/points.json").expect("could not load json file.");
+            File::open("./tests/topojson/points.json").expect("Could not load json file.");
         let mut data = String::new();
         file.read_to_string(&mut data)
             .expect("did not read file correctly.");
 
-        let topology: Topology = serde_json::from_str(&data).expect("did not parse correcly");
+        let topology: Topology = serde_json::from_str(&data).expect("Did not parse correcly.");
         assert_eq!(BBox::calc(&topology), [0_f64, 0_f64, 10_f64, 10_f64]);
     }
 }

@@ -638,8 +638,12 @@ mod feature_tests {
     //   });
     #[test]
     fn preserves_additional_dimensions_in_linestring_geometries() {
-        println!("topojson.feature preserves additional dimensions in MultiPoint geometries");
+        println!("topojson.feature preserves additional dimensions in LineString geometries");
         let t = Topology {
+            // arcs: vec![vec![
+            //     vec![1_f64, 2_f64, 0xf00 as f64, 0xbe as f64],
+            //     vec![3_f64, 4_f64, 0xbae as f64, 0xef as f64],
+            // ]],
             arcs: vec![vec![vec![1_f64, 2_f64], vec![3_f64, 4_f64]]],
             objects: vec![NamedGeometry {
                 name: "foo".to_string(),
