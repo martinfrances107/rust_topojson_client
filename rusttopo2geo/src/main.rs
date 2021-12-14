@@ -50,8 +50,14 @@ fn main() -> io::Result<()> {
         )
         .get_matches();
 
-    let filename = matches.value_of("INPUT").unwrap();
-    println!("using input file: {}", filename);
+    let filename = matches.value_of("INPUT");
+
+    match filename{
+        Some(filename) =>{
+            println!("using input file: {}", filename);
+        }
+        None => {println!("using stdIn");}
+    }
 
     // Convert
     let topo = read(filename)?;
@@ -69,10 +75,20 @@ fn main() -> io::Result<()> {
     }
 }
 
-fn read(filename: &str) -> io::Result<Topology> {
-    let mut f = File::open(filename)?;
+fn read(filename: Option<&str>) -> io::Result<Topology> {
     let mut buffer = String::new();
-    f.read_to_string(&mut buffer).expect("failed to read input");
+    match filename{
+        Some(filename) =>{
+            let mut f = File::open(filename)?;
+            f.read_to_string(&mut buffer).expect("failed to read input");
+        },
+        None => {
+            io::stdin().read_to_string(&mut buffer)?;
+
+        }
+    }
+
+
     let t = serde_json::from_str(&buffer).expect("Failed to parse");
     Ok(t)
 }

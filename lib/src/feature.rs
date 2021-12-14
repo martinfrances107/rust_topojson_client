@@ -242,16 +242,20 @@ mod feature_tests {
     #[test]
     fn multipoint() {
         println!("topojson.feature MultiPoint is a valid geometry type");
-        let t = simple_topology(topojson::Geometry::new(Value::MultiPoint(vec![vec![
-            0_f64, 0_f64,
-        ]])));
+        let t = simple_topology(topojson::Geometry::new(Value::MultiPoint(vec![
+            vec![0_f64, 0_f64],
+            vec![0xf0 as f64, 0xba as f64],
+        ])));
 
         assert_eq!(
             Builder::generate_from_name(&t, &"foo"),
-            Some(Geometry::MultiPoint(MultiPoint(vec![Point(Coordinate {
-                x: 0_f64,
-                y: 0_f64
-            })])))
+            Some(Geometry::MultiPoint(MultiPoint(vec![
+                Point(Coordinate { x: 0_f64, y: 0_f64 }),
+                Point(Coordinate {
+                    x: 0xf0 as f64,
+                    y: 0xba as f64
+                })
+            ])))
         );
     }
 
