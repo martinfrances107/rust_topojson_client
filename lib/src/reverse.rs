@@ -1,5 +1,3 @@
-use geo::CoordFloat;
-
 pub(crate) fn reverse<T>(array: &mut [T], n: usize)
 where
     T: Clone,
@@ -22,18 +20,7 @@ where
 mod reverse_tests {
 
     use super::*;
-    use geo::Coordinate;
-    use geo::Geometry;
-    use geo::GeometryCollection;
-    use geo::LineString;
-    use geo::MultiLineString;
-    use geo::MultiPolygon;
-    use geo::Point;
-    use geo::Polygon;
     use pretty_assertions::assert_eq;
-    use topojson::NamedGeometry;
-    use topojson::TransformParams;
-    use topojson::Value;
 
     // There is no equivalent test in the javascript version.
     #[test]

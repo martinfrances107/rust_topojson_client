@@ -1,9 +1,8 @@
-use crate::transform::Transform;
+use crate::transform::gen_transform;
 use topojson::{NamedGeometry, Topology, Value};
 
-#[derive(Clone, Debug)]
 pub struct BBox {
-    t: Transform,
+    t: Box<dyn FnMut(&[f64], usize) -> Vec<f64>>,
     x0: f64,
     y0: f64,
     x1: f64,
@@ -13,52 +12,41 @@ pub struct BBox {
 impl BBox {
     #[inline]
     pub fn calc(topology: &Topology) -> [f64; 4] {
-        match &topology.transform {
-            // Without a transform present ..return the widest bounding box.
-            None => [
-                f64::INFINITY,
-                f64::INFINITY,
-                f64::NEG_INFINITY,
-                f64::NEG_INFINITY,
-            ],
-            Some(transform) => {
-                let mut state = BBox {
-                    t: Transform::new(transform),
-                    x0: f64::INFINITY,
-                    y0: f64::INFINITY,
-                    x1: f64::NEG_INFINITY,
-                    y1: f64::NEG_INFINITY,
-                };
+        let mut state = BBox {
+            t: gen_transform(&topology.transform),
+            x0: f64::INFINITY,
+            y0: f64::INFINITY,
+            x1: f64::NEG_INFINITY,
+            y1: f64::NEG_INFINITY,
+        };
 
-                for arc in &topology.arcs {
-                    for (i, a) in arc.iter().enumerate() {
-                        let p = state.t.transform(a, i);
-                        if p[0] < state.x0 {
-                            state.x0 = p[0];
-                        }
-                        if p[0] > state.x1 {
-                            state.x1 = p[0];
-                        }
-                        if p[1] < state.y0 {
-                            state.y0 = p[1];
-                        }
-                        if p[1] > state.y1 {
-                            state.y1 = p[1];
-                        }
-                    }
+        for arc in &topology.arcs {
+            for (i, a) in arc.iter().enumerate() {
+                let p = (state.t)(a, i);
+                if p[0] < state.x0 {
+                    state.x0 = p[0];
                 }
-
-                for key in &topology.objects {
-                    state.bbox_geometry(key)
+                if p[0] > state.x1 {
+                    state.x1 = p[0];
                 }
-
-                [state.x0, state.y0, state.x1, state.y1]
+                if p[1] < state.y0 {
+                    state.y0 = p[1];
+                }
+                if p[1] > state.y1 {
+                    state.y1 = p[1];
+                }
             }
         }
+
+        for key in &topology.objects {
+            state.bbox_geometry(key)
+        }
+
+        [state.x0, state.y0, state.x1, state.y1]
     }
 
     fn bbox_point(&mut self, p: &[f64]) {
-        let p = self.t.transform(p, 0);
+        let p = (self.t)(p, 0);
         if p[0] < self.x0 {
             self.x0 = p[0];
         }

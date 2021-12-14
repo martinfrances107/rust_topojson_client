@@ -12,11 +12,10 @@ use geo::Polygon;
 use topojson::Arc;
 use topojson::ArcIndexes;
 use topojson::Topology;
-use topojson::TransformParams;
 use topojson::Value;
 
 use crate::reverse::reverse;
-use crate::transform::Transform;
+use crate::transform::gen_transform;
 
 #[derive(Derivative)]
 #[derivative(Debug)]
@@ -24,7 +23,7 @@ use crate::transform::Transform;
 pub struct Builder {
     arcs: Vec<Arc>,
     #[derivative(Debug = "ignore")]
-    transform_point: Transform,
+    transform: Box<dyn FnMut(&[f64], usize) -> Vec<f64>>,
 }
 
 impl Builder {
@@ -47,19 +46,17 @@ impl Builder {
     /// and no translation.
     #[inline]
     pub fn generate(topology: &Topology, o: &Value) -> Geometry<f64> {
-        let tp = match &topology.transform {
-            None => &TransformParams {
-                scale: [1_f64, 1_f64],
-                translate: [1_f64, 0_f64],
-            },
-            Some(transform_params) => transform_params,
-        };
-
-        let transform = Transform::new(tp);
+        // let tp = match &topology.transform {
+        //     None => &TransformParams {
+        //         scale: [1_f64, 1_f64],
+        //         translate: [0_f64, 0_f64],
+        //     },
+        //     Some(transform_params) => transform_params,
+        // };
 
         Self {
             arcs: topology.arcs.clone(),
-            transform_point: transform,
+            transform: gen_transform(&topology.transform),
         }
         .geometry(o)
     }
@@ -77,7 +74,7 @@ impl Builder {
         let a = &self.arcs[index];
         let n = a.len();
         for (k, v) in a.iter().enumerate() {
-            let t = self.transform_point.transform(v, k);
+            let t = (self.transform)(v, k);
             points.push((t[0], t[1]));
         }
 
@@ -89,7 +86,7 @@ impl Builder {
     /// Transform a single point.
     #[inline]
     fn point(&mut self, p: &[f64]) -> Vec<f64> {
-        self.transform_point.transform(p, 0)
+        (self.transform)(p, 0)
     }
 
     /// Convert a array of indicies found in a Geometry object into a arrays of
@@ -124,6 +121,7 @@ impl Builder {
         arcs.iter().map(|x| self.ring(x)).collect()
     }
 
+    /// For collections recursively build objects.
     #[inline]
     fn geometry(&mut self, o: &Value) -> Geometry<f64> {
         match &o {
@@ -150,15 +148,14 @@ impl Builder {
                 Geometry::MultiPoint(geo_multipoint)
             }
             Value::LineString(topo_ls) => {
-                // self.arc(0, topo_ls);
                 let line = self.line(topo_ls);
                 let geo_ls: LineString<f64> = line.into();
                 Geometry::LineString(geo_ls)
             }
             Value::MultiLineString(topo_mls) => {
-                let v_mls: Vec<LineString<f64>> =
+                let geo_mls: Vec<LineString<f64>> =
                     topo_mls.iter().map(|x| self.line(x).into()).collect();
-                Geometry::MultiLineString(MultiLineString(v_mls))
+                Geometry::MultiLineString(MultiLineString(geo_mls))
             }
             Value::Polygon(topo_polygon) => {
                 let v_linestring: Vec<LineString<f64>> = self
@@ -175,7 +172,7 @@ impl Builder {
                 Geometry::Polygon(Polygon::new(exterior, interior))
             }
             Value::MultiPolygon(topo_mp) => {
-                let v_polygon: Vec<Polygon<f64>> = topo_mp
+                let geo_polygon: Vec<Polygon<f64>> = topo_mp
                     .iter()
                     .map(|x| {
                         let v_linestring: Vec<LineString<f64>> =
@@ -187,7 +184,7 @@ impl Builder {
                     })
                     .collect();
 
-                Geometry::MultiPolygon(MultiPolygon(v_polygon))
+                Geometry::MultiPolygon(MultiPolygon(geo_polygon))
             }
         }
     }
@@ -596,7 +593,7 @@ mod feature_tests {
 
     #[test]
     fn preserves_additional_dimensions_in_point_geometries() {
-        println!("topojson.feature negative arc indexes indicate reversed coordinates");
+        println!("topojson.feature preserves additional dimensions in Point geometries");
         let t = Topology {
             arcs: vec![],
             objects: vec![NamedGeometry {
@@ -604,11 +601,7 @@ mod feature_tests {
                 geometry: topojson::Geometry::new(Value::Point(vec![1_f64, 2_f64])),
             }],
             bbox: None,
-            // transform: None,
-            transform: Some(TransformParams {
-                scale: [1_f64, 1_f64],
-                translate: [0_f64, 0_f64],
-            }),
+            transform: None,
             foreign_members: None,
         };
         assert_eq!(
@@ -617,18 +610,53 @@ mod feature_tests {
         );
     }
 
-    //   tape("topojson.feature preserves additional dimensions in MultiPoint geometries", function (test) {
-    //     var t = { type: "Topology", objects: { points: { type: "MultiPoint", coordinates: [[1, 2, "foo"]] } }, arcs: [] };
-    //     test.deepEqual(topojson.feature(t, t.objects.points), { type: "Feature", properties: {}, geometry: { type: "MultiPoint", coordinates: [[1, 2, "foo"]] } });
-    //     test.end();
-    //   });
+    #[test]
+    fn preserves_additional_dimensions_in_multipoint_geometries() {
+        println!("topojson.feature preserves additional dimensions in MultiPoint geometries");
+        let t = Topology {
+            arcs: vec![],
+            objects: vec![NamedGeometry {
+                name: "foo".to_string(),
+                geometry: topojson::Geometry::new(Value::MultiPoint(vec![vec![1_f64, 2_f64]])),
+            }],
+            bbox: None,
+            transform: None,
+            foreign_members: None,
+        };
+        assert_eq!(
+            Builder::generate_from_name(&t, &"foo"),
+            Some(Geometry::MultiPoint(MultiPoint(vec![Point::new(
+                1_f64, 2_f64
+            )])))
+        );
+    }
 
     //   tape("topojson.feature preserves additional dimensions in LineString geometries", function (test) {
     //     var t = { type: "Topology", objects: { line: { type: "LineString", arcs: [0] } }, arcs: [[[1, 2, "foo"], [3, 4, "bar"]]] };
     //     test.deepEqual(topojson.feature(t, t.objects.line), { type: "Feature", properties: {}, geometry: { type: "LineString", coordinates: [[1, 2, "foo"], [3, 4, "bar"]] } });
     //     test.end();
     //   });
-
+    #[test]
+    fn preserves_additional_dimensions_in_linestring_geometries() {
+        println!("topojson.feature preserves additional dimensions in MultiPoint geometries");
+        let t = Topology {
+            arcs: vec![vec![vec![1_f64, 2_f64], vec![3_f64, 4_f64]]],
+            objects: vec![NamedGeometry {
+                name: "foo".to_string(),
+                geometry: topojson::Geometry::new(Value::LineString(vec![0])),
+            }],
+            bbox: None,
+            transform: None,
+            foreign_members: None,
+        };
+        assert_eq!(
+            Builder::generate_from_name(&t, &"foo"),
+            Some(Geometry::LineString(LineString(vec![
+                Coordinate { x: 1_f64, y: 2_f64 },
+                Coordinate { x: 3_f64, y: 4_f64 }
+            ])))
+        );
+    }
     fn simple_topology(object: topojson::Geometry) -> Topology {
         Topology {
             arcs: vec![
