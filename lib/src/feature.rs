@@ -635,11 +635,6 @@ mod feature_tests {
         );
     }
 
-    //   tape("topojson.feature preserves additional dimensions in LineString geometries", function (test) {
-    //     var t = { type: "Topology", objects: { line: { type: "LineString", arcs: [0] } }, arcs: [[[1, 2, "foo"], [3, 4, "bar"]]] };
-    //     test.deepEqual(topojson.feature(t, t.objects.line), { type: "Feature", properties: {}, geometry: { type: "LineString", coordinates: [[1, 2, "foo"], [3, 4, "bar"]] } });
-    //     test.end();
-    //   });
     #[test]
     fn preserves_additional_dimensions_in_linestring_geometries() {
         println!("topojson.feature preserves additional dimensions in LineString geometries");

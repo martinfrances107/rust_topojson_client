@@ -22,10 +22,12 @@ mod bbox;
 mod bisect;
 /// function feature() and various From implementations.
 pub mod feature;
+
 pub mod neighbors;
 
+mod merge;
 /// function reverse() and unit tests.
 mod reverse;
-
+mod stitch;
 /// function generate, helper type TransformFn and unit tests.
 mod transform;
