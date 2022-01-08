@@ -516,11 +516,24 @@ mod feature_tests {
     //     test.end();
     //   });
 
-    //   tape("topojson.feature arcs are converted to coordinates", function(test) {
-    //     var t = simpleTopology({type: "Polygon", arcs: [[0]]});
-    //     test.deepEqual(topojson.feature(t, t.objects.foo).geometry.coordinates, [[[0, 0], [1, 0], [1, 1], [0, 1], [0, 0]]]);
-    //     test.end();
-    //   });
+    #[test]
+    fn arcs_are_converted_coordinates() {
+        println!("topojson.feature arcs are converted to coordinates");
+        let t = simple_topology(topojson::Geometry::new(Value::Polygon(vec![vec![0_i32]])));
+        assert_eq!(
+            Builder::generate_from_name(&t, &"foo"),
+            Some(Geometry::Polygon(Polygon::new(
+                LineString(vec![
+                    Coordinate { x: 0_f64, y: 0_f64 },
+                    Coordinate { x: 1_f64, y: 0_f64 },
+                    Coordinate { x: 1_f64, y: 1_f64 },
+                    Coordinate { x: 0_f64, y: 1_f64 },
+                    Coordinate { x: 0_f64, y: 0_f64 },
+                ]),
+                vec![]
+            )))
+        );
+    }
 
     #[test]
     fn negative_indexes_indicates_revered_coordinates() {
