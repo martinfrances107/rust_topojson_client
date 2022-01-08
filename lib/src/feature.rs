@@ -1,5 +1,6 @@
 use derivative::*;
 
+use geo::line_string;
 use geo::Coordinate;
 use geo::Geometry;
 use geo::GeometryCollection;
@@ -117,8 +118,15 @@ impl Builder {
     }
 
     #[inline]
-    fn polygon(&mut self, arcs: &[ArcIndexes]) -> Vec<Vec<(f64, f64)>> {
-        arcs.iter().map(|x| self.ring(x)).collect()
+    fn polygon<'a>(
+        &'a mut self,
+        arcs: &'a [ArcIndexes],
+    ) -> impl Iterator<Item = LineString<f64>> + 'a {
+        arcs.iter().map(move |x| self.ring(x)).map(|x| {
+            let x1: Vec<(f64, f64)> = (*x).iter().copied().collect();
+            let tmp: LineString<f64> = x1.into();
+            tmp
+        })
     }
 
     /// For collections recursively build objects.
@@ -158,35 +166,27 @@ impl Builder {
                 Geometry::MultiLineString(MultiLineString(geo_mls))
             }
             Value::Polygon(topo_polygon) => {
-                let v_linestring: Vec<LineString<f64>> = self
-                    .polygon(topo_polygon)
-                    .iter()
-                    .map(|x| {
-                        let x1: Vec<(f64, f64)> = (*x).iter().copied().collect();
-                        let tmp: LineString<f64> = x1.into();
-                        tmp
-                    })
-                    .collect();
-                let exterior: LineString<f64> = v_linestring[0].clone();
-                let interior = v_linestring[1..].to_vec();
-                Geometry::Polygon(Polygon::new(exterior, interior))
+                let mut linestring_iter = self.polygon(topo_polygon);
+                match linestring_iter.next() {
+                    Some(exterior) => {
+                        let interior = linestring_iter.collect();
+                        Geometry::Polygon(Polygon::new(exterior, interior))
+                    }
+                    None => Geometry::Polygon(Polygon::new(line_string![], vec![])),
+                }
             }
             Value::MultiPolygon(topo_mp) => {
                 let geo_polygon: Vec<Polygon<f64>> = topo_mp
                     .iter()
                     .map(|topo_polygon| {
-                        let v_linestring: Vec<LineString<f64>> = self
-                            .polygon(topo_polygon)
-                            .iter()
-                            .map(|x| {
-                                let x1: Vec<(f64, f64)> = (*x).iter().copied().collect();
-                                let tmp: LineString<f64> = x1.into();
-                                tmp
-                            })
-                            .collect();
-                        let exterior: LineString<f64> = v_linestring[0].clone();
-                        let interior = v_linestring[1..].to_vec();
-                        Polygon::new(exterior, interior)
+                        let mut linestring_iter = self.polygon(topo_polygon);
+                        match linestring_iter.next() {
+                            Some(exterior) => {
+                                let interior = linestring_iter.collect();
+                                Polygon::new(exterior, interior)
+                            }
+                            None => Polygon::new(line_string![], vec![]),
+                        }
                     })
                     .collect();
 
