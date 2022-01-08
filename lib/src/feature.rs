@@ -174,12 +174,18 @@ impl Builder {
             Value::MultiPolygon(topo_mp) => {
                 let geo_polygon: Vec<Polygon<f64>> = topo_mp
                     .iter()
-                    .map(|x| {
-                        let v_linestring: Vec<LineString<f64>> =
-                            self.polygon(x).iter().map(|y| (y.clone()).into()).collect();
-
-                        let exterior = v_linestring[0].clone();
-                        let interior: Vec<LineString<f64>> = v_linestring[1..].to_vec();
+                    .map(|topo_polygon| {
+                        let v_linestring: Vec<LineString<f64>> = self
+                            .polygon(topo_polygon)
+                            .iter()
+                            .map(|x| {
+                                let x1: Vec<(f64, f64)> = (*x).iter().copied().collect();
+                                let tmp: LineString<f64> = x1.into();
+                                tmp
+                            })
+                            .collect();
+                        let exterior: LineString<f64> = v_linestring[0].clone();
+                        let interior = v_linestring[1..].to_vec();
                         Polygon::new(exterior, interior)
                     })
                     .collect();
