@@ -22,7 +22,7 @@ mod world_test {
         let topology: Topology =
             serde_json::from_reader(file).expect("File should be parse as JSON.");
 
-        match Builder::generate_from_name(&topology, &"land") {
+        match Builder::generate_from_name::<f64>(&topology, &"land") {
             Some(Geometry::GeometryCollection(GeometryCollection(v_geometry))) => {
                 assert_eq!(v_geometry.len(), 1);
                 match &v_geometry[0] {
@@ -39,7 +39,7 @@ mod world_test {
             }
         };
 
-        match Builder::generate_from_name(&topology, &"countries") {
+        match Builder::generate_from_name::<f64>(&topology, &"countries") {
             Some(Geometry::GeometryCollection(GeometryCollection(v_geometry))) => {
                 assert_eq!(v_geometry.len(), 241);
             }

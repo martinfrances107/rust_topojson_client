@@ -52,11 +52,13 @@ fn main() -> io::Result<()> {
 
     let filename = matches.value_of("INPUT");
 
-    match filename{
-        Some(filename) =>{
+    match filename {
+        Some(filename) => {
             println!("using input file: {}", filename);
         }
-        None => {println!("using stdIn");}
+        None => {
+            println!("using stdIn");
+        }
     }
 
     // Convert
@@ -77,17 +79,15 @@ fn main() -> io::Result<()> {
 
 fn read(filename: Option<&str>) -> io::Result<Topology> {
     let mut buffer = String::new();
-    match filename{
-        Some(filename) =>{
+    match filename {
+        Some(filename) => {
             let mut f = File::open(filename)?;
             f.read_to_string(&mut buffer).expect("failed to read input");
-        },
+        }
         None => {
             io::stdin().read_to_string(&mut buffer)?;
-
         }
     }
-
 
     let t = serde_json::from_str(&buffer).expect("Failed to parse");
     Ok(t)
@@ -109,7 +109,7 @@ fn write(topo: &Topology) -> io::Result<()> {
         panic!("error: object {} not found", name)
     }
 
-    if let Some(feature) = FeatureBuilder::generate_from_name(topo, name) {
+    if let Some(feature) = FeatureBuilder::generate_from_name::<f64>(topo, name) {
         //TODO refactor of newlinedelited option
         println!("about to write");
         write_feature("out.txt", &feature)?;

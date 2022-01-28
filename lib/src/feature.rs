@@ -34,7 +34,10 @@ impl Builder {
     /// None: -
     ///   * The object subsection does not contain the name.
     #[inline]
-    pub fn generate_from_name(topology: &Topology, name: &str) -> Option<Geometry<f64>> {
+    pub fn generate_from_name<T>(topology: &Topology, name: &str) -> Option<Geometry<T>>
+    where
+        T: CoordFloat,
+    {
         topology
             .objects
             .iter()
@@ -47,7 +50,10 @@ impl Builder {
     /// If the transform params are ommited use identity scaling
     /// and no translation.
     #[inline]
-    pub fn generate(topology: &Topology, o: &Value) -> Geometry<f64> {
+    pub fn generate<T>(topology: &Topology, o: &Value) -> Geometry<T>
+    where
+        T: CoordFloat,
+    {
         // let tp = match &topology.transform {
         //     None => &TransformParams {
         //         scale: [1_f64, 1_f64],
@@ -281,7 +287,7 @@ mod feature_tests {
         println!("topojson.feature the geometry type is preserved");
         let t = simple_topology(topojson::Geometry::new(Value::Polygon(vec![vec![0]])));
 
-        match Builder::generate_from_name(&t, &"foo") {
+        match Builder::generate_from_name::<f64>(&t, &"foo") {
             Some(g) => match g {
                 Geometry::Polygon(_) => {
                     assert!(true, "Must produce polygon");
