@@ -1,6 +1,7 @@
 use derivative::*;
 
 use geo::line_string;
+use geo::CoordFloat;
 use geo::Coordinate;
 use geo::Geometry;
 use geo::GeometryCollection;
@@ -132,10 +133,13 @@ impl Builder {
 
     /// For collections recursively build objects.
     #[inline]
-    fn geometry(&mut self, o: &Value) -> Geometry<f64> {
+    fn geometry<T>(&mut self, o: &Value) -> Geometry<T>
+    where
+        T: CoordFloat,
+    {
         match &o {
             Value::GeometryCollection(topo_geometries) => {
-                let geo_geometries: Vec<Geometry<f64>> = topo_geometries
+                let geo_geometries: Vec<Geometry<T>> = topo_geometries
                     .iter()
                     .map(|x| self.geometry(&x.value))
                     .collect();
@@ -143,47 +147,104 @@ impl Builder {
             }
             Value::Point(topo_point) => {
                 let p = self.point(topo_point);
-                Geometry::Point(Point(Coordinate::<f64> { x: p[0], y: p[1] }))
+                Geometry::Point(Point(Coordinate::<T> {
+                    x: T::from(p[0]).unwrap(),
+                    y: T::from(p[1]).unwrap(),
+                }))
             }
             Value::MultiPoint(topo_multipoint) => {
-                let points: Vec<Point<f64>> = topo_multipoint
+                let points: Vec<Point<T>> = topo_multipoint
                     .iter()
                     .map(|c| {
                         let p = self.point(c);
-                        Point(Coordinate::<f64> { x: p[0], y: p[1] })
+                        Point(Coordinate::<T> {
+                            x: T::from(p[0]).unwrap(),
+                            y: T::from(p[1]).unwrap(),
+                        })
                     })
                     .collect();
-                let geo_multipoint: MultiPoint<f64> = MultiPoint(points);
+                let geo_multipoint = MultiPoint(points);
                 Geometry::MultiPoint(geo_multipoint)
             }
             Value::LineString(topo_ls) => {
                 let line = self.line(topo_ls);
-                let geo_ls: LineString<f64> = line.into();
+                let geo_ls: LineString<T> = line
+                    .iter()
+                    .map(|p| Coordinate {
+                        x: T::from(p.0).unwrap(),
+                        y: T::from(p.1).unwrap(),
+                    })
+                    .collect();
                 Geometry::LineString(geo_ls)
             }
+
             Value::MultiLineString(topo_mls) => {
-                let geo_mls: Vec<LineString<f64>> =
-                    topo_mls.iter().map(|x| self.line(x).into()).collect();
+                let geo_mls: Vec<LineString<T>> = topo_mls
+                    .iter()
+                    .map(|x| self.line(x))
+                    .map(|vec| {
+                        vec.iter()
+                            .map(|p| Coordinate {
+                                x: T::from(p.0).unwrap(),
+                                y: T::from(p.1).unwrap(),
+                            })
+                            .collect()
+                    })
+                    .collect();
                 Geometry::MultiLineString(MultiLineString(geo_mls))
             }
             Value::Polygon(topo_polygon) => {
                 let mut linestring_iter = self.polygon(topo_polygon);
                 match linestring_iter.next() {
                     Some(exterior) => {
-                        let interior = linestring_iter.collect();
+                        let interior = linestring_iter
+                            .map(|ls| {
+                                ls.0.iter()
+                                    .map(|p| Coordinate {
+                                        x: T::from(p.x).unwrap(),
+                                        y: T::from(p.y).unwrap(),
+                                    })
+                                    .collect()
+                            })
+                            .collect();
+                        let exterior = exterior
+                            .0
+                            .iter()
+                            .map(|p| Coordinate {
+                                x: T::from(p.x).unwrap(),
+                                y: T::from(p.y).unwrap(),
+                            })
+                            .collect();
                         Geometry::Polygon(Polygon::new(exterior, interior))
                     }
                     None => Geometry::Polygon(Polygon::new(line_string![], vec![])),
                 }
             }
             Value::MultiPolygon(topo_mp) => {
-                let geo_polygon: Vec<Polygon<f64>> = topo_mp
+                let geo_polygon: Vec<Polygon<T>> = topo_mp
                     .iter()
                     .map(|topo_polygon| {
                         let mut linestring_iter = self.polygon(topo_polygon);
                         match linestring_iter.next() {
                             Some(exterior) => {
-                                let interior = linestring_iter.collect();
+                                let exterior = exterior
+                                    .0
+                                    .iter()
+                                    .map(|p| Coordinate {
+                                        x: T::from(p.x).unwrap(),
+                                        y: T::from(p.y).unwrap(),
+                                    })
+                                    .collect();
+                                let interior = linestring_iter
+                                    .map(|ls| {
+                                        ls.0.iter()
+                                            .map(|p| Coordinate {
+                                                x: T::from(p.x).unwrap(),
+                                                y: T::from(p.y).unwrap(),
+                                            })
+                                            .collect()
+                                    })
+                                    .collect();
                                 Polygon::new(exterior, interior)
                             }
                             None => Polygon::new(line_string![], vec![]),
