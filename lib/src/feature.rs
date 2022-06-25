@@ -130,7 +130,7 @@ impl Builder {
         arcs: &'a [ArcIndexes],
     ) -> impl Iterator<Item = LineString<f64>> + 'a {
         arcs.iter().map(move |x| self.ring(x)).map(|x| {
-            let x1: Vec<(f64, f64)> = (*x).iter().copied().collect();
+            let x1: Vec<(f64, f64)> = (*x).to_vec();
             let mut tmp: LineString<f64> = x1.into();
             tmp.close();
             tmp
