@@ -46,8 +46,8 @@ impl Stitch {
             if topology.transform.is_some() {
                 p1 = vec![0_f64, 0_f64];
                 arc.iter().for_each(|dp| {
-                    p1[0] = p1[0] + dp[0];
-                    p1[1] = p1[1] + dp[1];
+                    p1[0] += dp[0];
+                    p1[1] += dp[1];
                 });
             } else {
                 p1 = arc.last().unwrap().clone();
