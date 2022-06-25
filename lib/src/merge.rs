@@ -74,7 +74,7 @@ impl MergeArcs {
     /// So I have modified to convert polygon into polygon_u
     /// which potential double the memory requirements.
     /// Thinking about using drain.
-    fn extract(&mut self, polygon: &Vec<Vec<i32>>) {
+    fn extract(&mut self, polygon: &[Vec<i32>]) {
         polygon.iter().for_each(|ring| {
             ring.iter().for_each(|arc| {
                 let index = if *arc < 0 {
@@ -83,15 +83,15 @@ impl MergeArcs {
                     *arc as usize
                 };
                 match self.polygons_by_arc.get(index) {
-                    Some(_) => self.polygons_by_arc[index].push(PolygonU::new(polygon.clone())),
+                    Some(_) => self.polygons_by_arc[index].push(PolygonU::new(polygon.to_vec())),
                     None => {
                         self.polygons_by_arc[index] = vec![];
-                        self.polygons_by_arc[index].push(PolygonU::new(polygon.clone()))
+                        self.polygons_by_arc[index].push(PolygonU::new(polygon.to_vec()))
                     }
                 };
             });
         });
-        self.polygons.push(PolygonU::new(polygon.clone()));
+        self.polygons.push(PolygonU::new(polygon.to_vec()));
     }
 
     fn appply_geometry(mut self, objects: &mut Vec<Value>) -> Self {
@@ -100,10 +100,10 @@ impl MergeArcs {
     }
 
     /// Generate a Polygons using MergeArcs.
-    fn generate(topology: Topology, objects: &Vec<Value>) -> Value {
+    fn generate(topology: Topology, objects: &[Value]) -> Value {
         let mut ma = Self::new(topology);
 
-        ma = ma.appply_geometry(&mut objects.clone());
+        ma = ma.appply_geometry(&mut objects.to_owned());
 
         ma.polygons.iter_mut().for_each(|polygon| {
             if !polygon.underscore {
