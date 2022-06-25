@@ -94,7 +94,7 @@ impl MergeArcs {
         self.polygons.push(PolygonU::new(polygon.to_vec()));
     }
 
-    fn appply_geometry(mut self, objects: &mut Vec<Value>) -> Self {
+    fn appply_geometry(mut self, objects: &mut [Value]) -> Self {
         objects.iter_mut().for_each(|o| self.geometry(o));
         self
     }
