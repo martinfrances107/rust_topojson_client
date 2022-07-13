@@ -26,7 +26,7 @@ fn main() -> io::Result<()> {
         .about("Converts TopoJSON objects to GeoJSON features.")
         .arg(
             Arg::with_name("INPUT")
-                .short("i")
+                .short('i')
                 .long("in")
                 .value_name("FILE")
                 .help("input topology file name; defaults to “-” for stdin")
@@ -36,14 +36,14 @@ fn main() -> io::Result<()> {
         .arg(
             Arg::with_name("LIST")
                 .long("list")
-                .short("l")
+                .short('l')
                 .help("list the object names on the input topology")
                 // .index(1)
                 .required(false),
         )
         .arg(
             Arg::with_name("NEWLINE")
-                .short("n")
+                .short('n')
                 .long("newline-delimited")
                 .multiple(true)
                 .help("output newline-delimted JSON"),
