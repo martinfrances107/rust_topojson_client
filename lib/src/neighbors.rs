@@ -1,119 +1,114 @@
-// use topojson::{Arc, ArcIndexes, Geometry, NamedGeometry, Topology, Value};
+use topojson::{ ArcIndexes,  NamedGeometry,  Value};
 
-// use crate::bisect::bisect;
+use crate::bisect::bisect;
 
-// struct Neighbors {
-//     // indexsByArc: ArcIndexes,
-// // neighbors: Vec<i32>,
-// }
+#[derive(Debug)]
+struct Neighbors {
+    indexesByArc: ArcIndexes,
+	neighbors: Vec<i32>,
+	o: Vec<NamedGeometry>,
+}
 
-// impl Neighbors {
-//     fn new(objects: &mut [NamedGeometry]) -> Vec<Neighbors> {
-//         let indexByArc: Vec<i32> = vec![];
-//         let neightbors: Vec<Vec<i32>> = objects
-//             .iter()
-//             .map(|_| {
-//                 return vec![];
-//             })
-//             .collect();
+impl Neighbors {
+    // fn new(objects: &mut [NamedGeometry]) -> Vec<Neighbors> {
+    //     let indexesByArc: Vec<i32> = vec![];
+    //     let neightbors: Vec<Vec<i32>> = objects
+    //         .iter()
+    //         .map(|_| {
+    //             return vec![];
+    //         })
+    //         .collect();
 
-//         for o in objects {
-//             Neighbors::geometry(o, 0);
-//         }
+    //     for o in objects {
+    //         Neighbors::geometry(o, 0);
+    //     }
 
-//         // for i in indexesByArc {
-//         //   let indexes = self.indexesByArc[i];
-//         //   let m = indexes.len();
-//         //   for j in 0..m{
-//         //     for k in j+1..m{
-//         //       let ij = indexes[i];
-//         //       let ik = indexes[k];
-//         //       let n = self.neighbors[ij];
-//         //       i = bisect(n, ik);
+    //     for i in indexesByArc {
+    //       let indexes = indexesByArc[i as usize];
+    //       let m = indexes.len();
+    //       for j in 0..m{
+    //         for k in j+1..m{
+    //           let ij = indexes[i as usize];
+    //           let ik = indexes[k as usize];
+    //           let n = neightbors[ij];
+    //           i = bisect(n, ik);
 
-//         //       if n[i] != ik {
-//         //         n.insert(i, ik);
-//         //       }
+    //           if n[i] != ik {
+    //             n.insert(i, ik);
+    //           }
 
-//         //       let n = self.neighbors[ik];
-//         //       let i = bisect(n, ij);
-//         //       if n != ij {
-//         //         n.insert(i,0, ij);
-//         //       }
-//         //     }
-//         //   }
-//         //   for indexes in indexesByArc[i]
-//         // }
-//         vec![]
-//     }
+    //           let n = neightbors[ik];
+    //           let i = bisect(n, ij);
+    //           if n != ij {
+    //             n.insert(i,0, ij);
+    //           }
+    //         }
+    //       }
+    //       for indexes in indexesByArc[i] {}
+	// 	  vec![]
+    //     }
+    // }
 
-//     fn lines(self, arcs: ArcIndexes, i: i32) {
-//         for a in arcs {
-//             if a < 0 {
-//                 a = !a as usize;
-//             };
-//             let o = self.indexByArc[a];
-//             match o {
-//                 Some(o) => {
-//                     o.push(i);
-//                 }
-//                 None => self.indexesByArc[a] = vec![i],
-//             }
-//         }
-//     }
+    // fn line(&mut self, arcs: &mut ArcIndexes, i: usize) {
+    //     for a in arcs {
+    //         if *a < 0 {
+    //             *a = !*a;
+    //         };
 
-//     fn polygons(self, arcs: ArcIndexes, i: i32) {
-//         for arc in self.arcs {
-//             self.line(arc, i);
-//         }
-//     }
+    //         match self.indexesByArc.get(*a as usize ) {
+    //             Some(o) => {
+    //                 self.indexesByArc[*a as usize].push(i);
+    //             }
+    //             None => self.indexesByArc[*a as usize] = vec![i],
+    //         }
+    //     }
+    // }
 
-//     fn geometry(o: &mut NamedGeometry, i: i32) {
-//         match o.geometry.value {
-//             Value::GeometryCollection(gc) => {}
-//             Value::LineString(line) => {}
-//             Value::MultiLineString(polygon) => {}
-//             Value::Polygon(polygon) => {}
-//             Value::MultiPolygon(mp) => {
-//                 // function (arcs, i) { arcs.forEach(function (arc) { polygon(arc, i); }); }
-//             }
-//             _ => {
-//                 todo!("What is mising here!");
-//             }
-//         }
-//     }
-// }
+    // fn polygons(self, arcs: &mut ArcIndexes, i: i32) {
+    //     for arc in arcs {
+    //         self.line(arc, i);
+    //     }
+    // }
+
+    // fn geometry(o: &mut NamedGeometry, i: i32) {
+    //     match o.geometry.value {
+    //         Value::GeometryCollection(gc) => {}
+    //         Value::LineString(line) => {}
+    //         Value::MultiLineString(polygon) => {}
+    //         Value::Polygon(polygon) => {}
+    //         Value::MultiPolygon(mp) => {
+    //             // function (arcs, i) { arcs.forEach(function (arc) { polygon(arc, i); }); }
+    //         }
+    //         _ => {
+    //             todo!("What is mising here!");
+    //         }
+    //     }
+    // }
+}
 
 // #[cfg(not(tarpaulin_include))]
 // #[cfg(test)]
 // mod neighbors_tests {
 
 //     use super::*;
-//     // use geo::Coordinate;
-//     // use geo::Geometry;
-//     // use geo::GeometryCollection;
-//     // use geo::LineString;
-//     // use geo::MultiLineString;
-//     // use geo::MultiPolygon;
-//     // use geo::Point;
-//     // use geo::Polygon;
 //     use pretty_assertions::assert_eq;
 //     use topojson::Geometry;
 //     use topojson::NamedGeometry;
+//     use topojson::Topology;
 //     use topojson::TransformParams;
 //     use topojson::Value;
 
 //     #[test]
 //     fn empty_array_empty_input() {
 //         println!("neighbors returns an empty array for empty input");
-//         assert_eq!(Neighbors::new(&[]), vec![]);
+//         assert_eq!(Neighbors::new(&mut []).len(),0);
 //     }
 
-//     //   //
-//     //   // A-----B
-//     //   //
-//     //   // C-----D
-//     //   //
+//       //
+//       // A-----B
+//       //
+//       // C-----D
+//       //
 //     #[test]
 //     fn empty_array_for_objects_with_no_neighbors() {
 //         println!("neighbors returns an empty array for objects with no neighbors");
@@ -139,7 +134,7 @@
 //             foreign_members: None,
 //         };
 
-//         let n = Neighbors::new(&topology.o);
+//         let n = Neighbors::new(&mut topology.o);
 //         assert_eq!(n, vec![vec![], vec![]]);
 //     }
 
@@ -171,7 +166,7 @@
 //             foreign_members: None,
 //         };
 
-//         assert_eq!(Neighbors::new(&topology.objects), vec![vec![], vec![]]);
+//         assert_eq!(Neighbors::new(&mut topology.objects), vec![vec![], vec![]]);
 //     }
 
 //     //
@@ -201,7 +196,7 @@
 //             foreign_members: None,
 //         };
 
-//         assert_eq!(Neighbors::new(&topology.objects), vec![vec![1], vec![0]]);
+//         assert_eq!(Neighbors::new(&mut topology.objects), vec![vec![1], vec![0]]);
 //     }
 
 //     //
@@ -249,6 +244,6 @@
 //             foreign_members: None,
 //         };
 
-//         assert_eq!(Neighbors::new(&topology.objects), vec![vec![1], vec![0]]);
+//         assert_eq!(Neighbors::new(&mut topology.objects), vec![vec![1], vec![0]]);
 //     }
 // }
