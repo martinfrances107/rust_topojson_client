@@ -23,9 +23,20 @@ The only feature extraction section of this library has been ported.
 
 ## TODO
 
-Next  port untranslate test, Maybe?
+* get command lines working, by using [clap](https://docs.rs/clap/3.2.16/clap/).
+* neigbours.rs -- is using dynamic dispatch, in an issues related to anomymous functions :-
+
+```
+let indexes_by_arc = Rc<RefCell<BTreeMap<usize, ArcIndexes>>>
+```
+
+I am leaving this until the benchmarking stage, but I think this can be refactored away.
 
 
-small map of africa
 
-https://bl.ocks.org/bricedev/3905007f1794b0cb0bcd
+* Next  port untranslate test, Maybe?
+
+
+* develop a example, using a small map of africa
+
+  https://bl.ocks.org/bricedev/3905007f1794b0cb0bcd
