@@ -659,6 +659,9 @@ mod feature_tests {
         )
     }
 
+    // Cannot port this test are Geometry types "Unknown" is not possible in rust.
+    // everything must have a concrete type.
+    //
     //   tape("topojson.feature unknown geometry types are converted to null geometries", function (test) {
     //     var topology = {
     //       type: "Topology",
@@ -673,12 +676,6 @@ mod feature_tests {
     //     test.deepEqual(topojson.feature(topology, topology.objects.foo), { type: "Feature", id: "foo", properties: {}, geometry: null });
     //     test.deepEqual(topojson.feature(topology, topology.objects.bar), { type: "Feature", properties: { bar: 2 }, geometry: null });
     //     test.deepEqual(topojson.feature(topology, topology.objects.baz), { type: "FeatureCollection", features: [{ type: "Feature", id: "unknown", properties: {}, geometry: null }] });
-    //     test.end();
-    //   });
-
-    //   tape("topojson.feature preserves additional dimensions in Point geometries", function (test) {
-    //     var t = { type: "Topology", objects: { point: { type: "Point", coordinates: [1, 2, "foo"] } }, arcs: [] };
-    //     test.deepEqual(topojson.feature(t, t.objects.point), { type: "Feature", properties: {}, geometry: { type: "Point", coordinates: [1, 2, "foo"] } });
     //     test.end();
     //   });
 
@@ -726,11 +723,10 @@ mod feature_tests {
     fn preserves_additional_dimensions_in_linestring_geometries() {
         println!("topojson.feature preserves additional dimensions in LineString geometries");
         let t = Topology {
-            // arcs: vec![vec![
-            //     vec![1_f64, 2_f64, 0xf00 as f64, 0xbe as f64],
-            //     vec![3_f64, 4_f64, 0xbae as f64, 0xef as f64],
-            // ]],
-            arcs: vec![vec![vec![1_f64, 2_f64], vec![3_f64, 4_f64]]],
+            arcs: vec![vec![
+                vec![1_f64, 2_f64, 0xf00 as f64, 0xbe as f64],
+                vec![3_f64, 4_f64, 0xbae as f64, 0xef as f64],
+            ]],
             objects: vec![NamedGeometry {
                 name: "foo".to_string(),
                 geometry: topojson::Geometry::new(Value::LineString(vec![0])),
