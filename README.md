@@ -41,7 +41,7 @@ Developing the binaries and getting topo2geo-test and topoquantize-test to pass.
 * neigbours.rs -- is using dynamic dispatch, in an issues related to anomymous functions :-
 
   ```
-  let indexes_by_arc = Rc<RefCell<BTreeMap<usize, ArcIndexes>>>
+  let indexes_by_arc = RefCell<BTreeMap<usize, ArcIndexes>>
   ```
 
   I am leaving this until the benchmarking stage, but I think this can be refactored away.

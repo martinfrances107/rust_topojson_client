@@ -1,12 +1,13 @@
 use std::collections::BTreeMap;
-use std::{cell::RefCell, rc::Rc};
+use std::cell::RefCell;
 
 use bisect::bisect;
 use topojson::{ArcIndexes, NamedGeometry, Value};
 
-fn neighbors(objects: &mut [NamedGeometry]) -> Vec<ArcIndexes> {
-    let indexes_by_arc: Rc<RefCell<BTreeMap<usize, ArcIndexes>>> =
-        Rc::new(RefCell::new(BTreeMap::new()));
+/// Foreach geometry item produce a list of neigbors.
+pub fn neighbors(objects: &mut [NamedGeometry]) -> Vec<ArcIndexes> {
+    let indexes_by_arc: RefCell<BTreeMap<usize, ArcIndexes>> =
+        RefCell::new(BTreeMap::new());
     let mut neighbors: Vec<Vec<i32>> = objects.iter().map(|_| vec![]).collect();
 
     let line = |arcs: &mut ArcIndexes, i: i32| {
@@ -56,8 +57,7 @@ fn neighbors(objects: &mut [NamedGeometry]) -> Vec<ArcIndexes> {
         named_geometry(o, i as i32);
     }
 
-    dbg!(indexes_by_arc.borrow());
-    for (i, indexes_i) in indexes_by_arc.borrow().iter() {
+    for (_i, indexes_i) in indexes_by_arc.borrow().iter() {
         let m = indexes_i.len();
         for j in 0..m {
             for k in j + 1..m {
