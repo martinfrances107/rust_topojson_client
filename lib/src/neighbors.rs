@@ -294,4 +294,127 @@ mod neighbors_tests {
         ];
         assert_eq!(neighbors(&mut topology.objects), expected);
     }
+
+    // //
+    // // A-----B-----E     G
+    // // |     |     |     |\
+    // // |     |     |     | \
+    // // |     |     |     |  \
+    // // |     |     |     |   \
+    // // |     |     |     |    \
+    // // D-----C-----F     I-----H
+    // //
+    #[test]
+    fn abcda_and_befcb_are_neighbors_but_ghig_is_not() {
+        println!("neighbors the polygons ABCDA and BEFCB are neighbors, but GHIG is not");
+        let mut topology = Topology {
+            objects: vec![
+                NamedGeometry {
+                    name: "abcda".to_string(),
+                    geometry: Geometry::new(Value::LineString(vec![0, 1])),
+                },
+                NamedGeometry {
+                    name: "befcb".to_string(),
+                    geometry: Geometry::new(Value::LineString(vec![2, -1])),
+                },
+                NamedGeometry {
+                    name: "ghig".to_string(),
+                    geometry: Geometry::new(Value::LineString(vec![3])),
+                },
+            ],
+            arcs: vec![
+                vec![vec![1_f64, 0_f64], vec![1_f64, 1_f64]],
+                vec![
+                    vec![1_f64, 1_f64],
+                    vec![0_f64, 1_f64],
+                    vec![0_f64, 0_f64],
+                    vec![1_f64, 0_f64],
+                ],
+                vec![
+                    vec![1_f64, 0_f64],
+                    vec![2_f64, 0_f64],
+                    vec![2_f64, 1_f64],
+                    vec![1_f64, 1_f64],
+                ],
+                vec![
+                    vec![3_f64, 0_f64],
+                    vec![4_f64, 1_f64],
+                    vec![3_f64, 1_f64],
+                    vec![3_f64, 0_f64],
+                ],
+            ],
+            bbox: None,
+            transform: None,
+            foreign_members: None,
+        };
+        let expected: Vec<ArcIndexes> = vec![vec![1], vec![0], vec![]];
+        assert_eq!(neighbors(&mut topology.objects), expected);
+    }
+
+    // //
+    // // A-----------B-----------C
+    // // |           |           |
+    // // |           |           |
+    // // |     D-----E-----F     |
+    // // |     |           |     |
+    // // |     |           |     |
+    // // |     G-----H-----I     |
+    // // |           |           |
+    // // |           |           |
+    // // J-----------K-----------L
+    // //
+    #[test]
+    fn the_polygons_abedghkja_and_bclkhifeb_are_neighbors_and_not_listed_twice(){
+
+    println!("neighbors the polygons ABEDGHKJA and BCLKHIFEB are neighbors, and not listed twice");
+    let mut topology = Topology {
+        objects: vec![
+            NamedGeometry {
+                name: "abdeghkja".to_string(),
+                geometry: Geometry::new(Value::LineString(vec![0, 1, 2, 3])),
+            },
+            NamedGeometry {
+                name: "bclkhifeb".to_string(),
+                geometry: Geometry::new(Value::LineString(vec![4, -3, 5, -1])),
+            },
+        ],
+        arcs: vec![
+            vec![vec![2_f64, 0_f64], vec![2_f64, 1_f64]],
+            vec![
+                vec![2_f64, 2_f64],
+                vec![1_f64, 1_f64],
+                vec![1_f64, 2_f64],
+                vec![2_f64, 2_f64],
+            ],
+            vec![
+                vec![2_f64, 2_f64],
+                vec![2_f64, 3_f64],
+
+            ],
+            vec![
+                vec![2_f64, 3_f64],
+                vec![0_f64, 3_f64],
+                vec![0_f64, 0_f64],
+                vec![2_f64, 0_f64],
+            ],
+            vec![
+                vec![2_f64, 0_f64],
+                vec![4_f64, 0_f64],
+                vec![4_f64, 3_f64],
+                vec![2_f64, 3_f64],
+            ],
+            vec![
+                vec![2_f64, 2_f64],
+                vec![3_f64, 2_f64],
+                vec![3_f64, 1_f64],
+                vec![2_f64, 1_f64],
+            ],
+        ],
+        bbox: None,
+        transform: None,
+        foreign_members: None,
+    };
+    let expected: Vec<ArcIndexes> = vec![vec![1], vec![0]];
+    assert_eq!(neighbors(&mut topology.objects), expected);
+    }
 }
