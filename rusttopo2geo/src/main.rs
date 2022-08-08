@@ -5,27 +5,22 @@ use std::fs::File;
 use std::io;
 use std::io::prelude::*;
 
-use clap::App;
+use clap::Command;
 use clap::Arg;
-use geo::CoordFloat;
 use geo::CoordNum;
-use rust_topojson_client::feature::Builder as FeatureBuilder;
 use serde::Serialize;
-use serde_json::to_writer;
-// use topojson::Geometry;
 use topojson::Topology;
-
 use geo::Geometry;
 
-struct MissingObject();
+use rust_topojson_client::feature::Builder as FeatureBuilder;
 
 fn main() -> io::Result<()> {
-    let matches = App::new("topo2geo")
-        .version("1.0")
-        .author("Martin F. <martinfrances107@hotmail.com>")
+    let matches = Command::new("topo2geo")
+        .version("0.1")
+        .author("Martin Frances <martinfrances107@hotmail.com>")
         .about("Converts TopoJSON objects to GeoJSON features.")
         .arg(
-            Arg::with_name("INPUT")
+            Arg::new("INPUT")
                 .short('i')
                 .long("in")
                 .value_name("FILE")
@@ -34,47 +29,31 @@ fn main() -> io::Result<()> {
                 .required(false),
         )
         .arg(
-            Arg::with_name("LIST")
+            Arg::new("LIST")
                 .long("list")
                 .short('l')
                 .help("list the object names on the input topology")
-                // .index(1)
                 .required(false),
         )
         .arg(
-            Arg::with_name("NEWLINE")
+            Arg::new("NEWLINE")
                 .short('n')
                 .long("newline-delimited")
-                .multiple(true)
+                // .multiple(true)
                 .help("output newline-delimted JSON"),
         )
         .get_matches();
 
     let filename = matches.value_of("INPUT");
 
-    match filename {
-        Some(filename) => {
-            println!("using input file: {}", filename);
-        }
-        None => {
-            println!("using stdIn");
-        }
-    }
-
-    // Convert
     let topo = read(filename)?;
 
-    match matches.occurrences_of("LIST") {
-        0 => {
-            println!("writing file.");
-            write(&topo)
-        }
-        _ => {
-            println!("objects :-");
-            write_list(&topo);
-            Ok(())
-        }
+    if matches.contains_id("LIST") {
+        write_list(&topo);
+    } else if matches.contains_id("INPUT"){
+        write(&topo)?
     }
+    Ok(())
 }
 
 fn read(filename: Option<&str>) -> io::Result<Topology> {
@@ -102,7 +81,6 @@ fn write_list(topo: &Topology) {
 fn write(topo: &Topology) -> io::Result<()> {
     let name = "countries";
 
-    // let not_found = topo.objects.iter().find(|ng| ng.name == name).is_none();
     let has_object = topo.objects.iter().any(|ng| ng.name == name);
     println!("has_object {}", has_object);
     if !has_object {
@@ -114,7 +92,6 @@ fn write(topo: &Topology) -> io::Result<()> {
         println!("about to write");
         write_feature("out.txt", &feature)?;
     }
-    // write_feature(file, feature);
 
     // Signal nothing to write.
     Ok(())

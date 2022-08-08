@@ -14,3 +14,8 @@ pretty_assertions = "1.0.0"
 criterion = "0.3"
 serde_json = "1.0.69"
 serde="1.0"
+
+
+[[bench]]
+name = "world"
+harness= false
