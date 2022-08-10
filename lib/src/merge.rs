@@ -1,8 +1,9 @@
 use geo::{CoordFloat, Coordinate, Geometry};
 use topojson::{ArcIndexes, Topology, Value};
 
-use super::stitch::Stitch;
+
 use crate::feature::Builder as FeatureBuilder;
+use crate::stitch::stitch;
 
 fn planar_ring_area<T>(ring: &Vec<Coordinate<T>>) -> T
 where
@@ -94,18 +95,13 @@ impl MergeArcs {
         self.polygons.push(PolygonU::new(polygon.to_vec()));
     }
 
-    fn appply_geometry(mut self, objects: &mut [Value]) -> Self {
-        objects.iter_mut().for_each(|o| self.geometry(o));
-        self
-    }
-
     /// Generate a Polygons using MergeArcs.
-    fn generate(topology: Topology, objects: &[Value]) -> Value {
+    fn generate(&mut self, topology: Topology, objects: &mut [Value]) -> Value {
         let mut ma = Self::new(topology);
 
-        ma = ma.appply_geometry(&mut objects.to_owned());
+        objects.iter_mut().for_each(|o| self.geometry(o));
 
-        ma.polygons.iter_mut().for_each(|polygon| {
+        ma.polygons.clone().iter_mut().for_each(|polygon| {
             if !polygon.underscore {
                 let mut group = vec![];
                 let mut neighbors = vec![polygon.clone()];
@@ -121,12 +117,12 @@ impl MergeArcs {
                             } else {
                                 *arc as usize
                             };
-                            // ma.polygons_by_arc[index].iter_mut().for_each(|polygon| {
-                            //     if !polygon.underscore {
-                            //         polygon.underscore = true;
-                            //         neighbors.push(polygon.clone());
-                            //     }
-                            // });
+                            ma.polygons_by_arc[index].iter_mut().for_each(|polygon| {
+                                if !polygon.underscore {
+                                    polygon.underscore = true;
+                                    neighbors.push(polygon.clone());
+                                }
+                            });
                         });
                     });
                 }
@@ -137,56 +133,55 @@ impl MergeArcs {
             .iter_mut()
             .for_each(|polygon| polygon.underscore = false);
 
-        let arcs: Vec<ArcIndexes> = vec![];
-        // let arcs = ma
-        //     .groups
-        //     .iter()
-        //     .map(|polygons| {
-        //         let arcs = Vec::new();
-        //         let n: usize;
-        //         ma.polygons.iter().map(|polygon| {
-        //             polygon.v.iter().map(|ring| {
-        //                 ring.iter().map(|arc| {
-        //                     let arc = if *arc < 0_i32 { !*arc } else { *arc };
-        //                     if ma.polygons_by_arc[arc as usize].len() < 2 {}
-        //                 })
-        //             });
-        //         });
+        // Extract the exterior (unique) arcs.
+        let polygon_arcs = ma
+            .groups.clone()
+            .iter()
+            .map(|polygons| {
+                let mut arcs_extracted: ArcIndexes = Vec::new();
+                ma.polygons.iter().map(|polygon| {
+                    polygon.v.iter().map(|ring| {
+                        ring.iter().map( |arc| {
+                            let arc = if *arc < 0_i32 { !*arc } else { *arc };
+                            if ma.polygons_by_arc[arc as usize].len() < 2 {
+                                arcs_extracted.push(arc);
+                            }
+                        });
+                    });
+                });
 
-        //         // Stich the arc into one or more rings.
-        //         arcs = Stitch::default().gen(ma.topology, arcs);
+                // Stich the arc into one or more rings.
+                let mut arcs_vec = stitch(ma.topology.clone(), arcs_extracted);
 
-        //         // If more than one ring is returned,
-        //         // at most one of these rings can be the exterior;
-        //         // choose the one with the greatest absolute area.
-        //         n = arcs.len();
-        //         if n > 1 {
-        //             let t;
-        //             let iter = arcs.iter_mut();
-        //             let k = ma.area(*iter.next().unwrap());
-        //             let ki;
-        //             let t;
-        //             for a in iter {
-        //                 ki = ma.area(a);
-        //                 if ki > k {
-        //                     // todo this is a swap with arcs[0]
-        //                     t = a;
-        //                     arcs[0] = *a;
-        //                     a = t;
-        //                     k = ki;
-        //                 }
-        //             }
-        //         }
-        //         Value::MultiPolygon(arcs)
-        //     })
-        //     .filter(|arcs| (*arcs).len() > 0)
-        //     .collect();
+                // If more than one ring is returned,
+                // at most one of these rings can be the exterior;
+                // choose the one with the greatest absolute area.
+                if  arcs_vec.len() > 1 {
+                    let mut iter_mut = arcs_vec.iter_mut();
+                    let mut k = ma.area(iter_mut.next().unwrap().to_vec());
+                    let mut ki;
+                    let mut t;
+                    for a in arcs_vec.clone().iter_mut() {
+                        ki = ma.area(a.to_vec());
+                        if ki > k {
+                            // todo this is a swap with arcs[0]
+                            t = a.clone();
+                            arcs_vec[0] = a.clone();
+                            *a = t;
+                            k = ki;
+                        }
+                    }
+                }
+                arcs_vec
+            })
+            .filter(|arcs| (*arcs).len() > 0)
+            .collect();
 
-        Value::Polygon(arcs)
+        Value::MultiPolygon(polygon_arcs)
     }
 
-    fn area(&self, ring: Vec<ArcIndexes>) -> f64 {
-        let polygon = Value::Polygon(ring);
+    fn area(&self, ring: ArcIndexes) -> f64 {
+        let polygon = Value::Polygon(vec![ring]);
         let object = FeatureBuilder::generate(&self.topology, &polygon);
         match object {
             Geometry::Polygon(p) => planar_ring_area(&p.exterior().0),
@@ -204,10 +199,10 @@ mod merge_tests {
     use crate::merge;
 
     use super::*;
-    use geo::line_string;
-    use geo::Geometry;
-    use geo::MultiPolygon;
-    use geo::Polygon;
+    // use geo::line_string;
+    // use geo::Geometry;
+    // use geo::MultiPolygon;
+    // use geo::Polygon;
     use pretty_assertions::assert_eq;
     use topojson::NamedGeometry;
     use topojson::TransformParams;
@@ -267,7 +262,8 @@ mod merge_tests {
     //
     // #[test]
     // fn stitches_together_two_side_by_side_polygons() {
-    //     let values = vec![
+    //     println!("merge stitches together two side-by-side polygons");
+    //     let mut values = vec![
     //         Value::Polygon(vec![vec![0, 1]]),
     //         Value::Polygon(vec![vec![-1, 2]]),
     //     ];
@@ -313,7 +309,7 @@ mod merge_tests {
     //         vec![1, 0],
     //     ]]);
 
-    //     assert_eq!(MergeArcs::generate(topology, &values), mp);
+    //     assert_eq!(MergeArcs::new(topology.clone()).generate(topology, &mut values), mp);
     // }
 
     //   //

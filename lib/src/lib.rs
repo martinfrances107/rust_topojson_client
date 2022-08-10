@@ -23,6 +23,7 @@ mod bisect;
 /// function feature() and various From implementations.
 pub mod feature;
 
+/// Identifies neighbours in geometry.
 pub mod neighbors;
 
 mod merge;
