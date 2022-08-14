@@ -32,3 +32,14 @@ mod reverse;
 mod stitch;
 /// function generate, helper type TransformFn and unit tests.
 mod transform;
+
+// Translate ARC indexes which are signed offsets
+// into absolute positions in the array.
+#[inline]
+fn translate(arc: i32) -> usize {
+    if arc < 0 {
+        !arc as usize
+    } else {
+        arc as usize
+    }
+}

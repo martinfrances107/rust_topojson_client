@@ -1,5 +1,8 @@
 use std::collections::HashMap;
+
 use topojson::{ArcIndexes, Topology};
+
+use crate::translate;
 
 pub fn stitch(topology: Topology, mut arcs: ArcIndexes) -> Vec<ArcIndexes> {
     let mut stitch = Stitch {
@@ -12,7 +15,7 @@ pub fn stitch(topology: Topology, mut arcs: ArcIndexes) -> Vec<ArcIndexes> {
     };
 
     let ends = |i: i32| -> Vec<Vec<f64>> {
-        let index = if i < 0 { !i as usize } else { i as usize };
+        let index = translate(i);
 
         let arc = &topology.arcs[index];
         let p0 = arc[0].clone();
@@ -34,11 +37,17 @@ pub fn stitch(topology: Topology, mut arcs: ArcIndexes) -> Vec<ArcIndexes> {
         }
     };
 
-    stitch.clone().flush(&mut stitch.fragment_by_end.clone(), &mut stitch.fragment_by_start.clone());
-    stitch.flush(&mut stitch.fragment_by_start.clone(), &mut stitch.fragment_by_end.clone());
+    stitch.clone().flush(
+        &mut stitch.fragment_by_end.clone(),
+        &mut stitch.fragment_by_start.clone(),
+    );
+    stitch.flush(
+        &mut stitch.fragment_by_start.clone(),
+        &mut stitch.fragment_by_end.clone(),
+    );
 
     arcs.clone().iter_mut().enumerate().map(|(j, i)| {
-        let index = if *i < 0 { !*i as usize } else { *i as usize };
+        let index = translate(*i);
         let arc = &mut topology.arcs[index].clone();
         if arc.len() < 3usize && arc[1][0] == 0_f64 && arc[1][1] == 0_f64 {
             stitch.empty_index += 1;

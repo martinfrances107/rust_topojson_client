@@ -1,9 +1,9 @@
 use geo::{CoordFloat, Coordinate, Geometry};
 use topojson::{ArcIndexes, Topology, Value};
 
-
 use crate::feature::Builder as FeatureBuilder;
 use crate::stitch::stitch;
+use crate::translate;
 
 fn planar_ring_area<T>(ring: &Vec<Coordinate<T>>) -> T
 where
@@ -78,11 +78,7 @@ impl MergeArcs {
     fn extract(&mut self, polygon: &[Vec<i32>]) {
         polygon.iter().for_each(|ring| {
             ring.iter().for_each(|arc| {
-                let index = if *arc < 0 {
-                    !*arc as usize
-                } else {
-                    *arc as usize
-                };
+                let index = translate(*arc);
                 match self.polygons_by_arc.get(index) {
                     Some(_) => self.polygons_by_arc[index].push(PolygonU::new(polygon.to_vec())),
                     None => {
@@ -112,11 +108,7 @@ impl MergeArcs {
                     group.push(polygon.v.clone());
                     polygon.v.iter().for_each(|ring| {
                         ring.iter().for_each(|arc| {
-                            let index = if *arc < 0 {
-                                !*arc as usize
-                            } else {
-                                *arc as usize
-                            };
+                            let index = translate(*arc);
                             ma.polygons_by_arc[index].iter_mut().for_each(|polygon| {
                                 if !polygon.underscore {
                                     polygon.underscore = true;
@@ -135,16 +127,18 @@ impl MergeArcs {
 
         // Extract the exterior (unique) arcs.
         let polygon_arcs = ma
-            .groups.clone()
+            .groups
+            .clone()
             .iter()
             .map(|polygons| {
-                let mut arcs_extracted: ArcIndexes = Vec::new();
+                let mut arcs_extracted = Vec::new();
                 ma.polygons.iter().map(|polygon| {
                     polygon.v.iter().map(|ring| {
-                        ring.iter().map( |arc| {
-                            let arc = if *arc < 0_i32 { !*arc } else { *arc };
-                            if ma.polygons_by_arc[arc as usize].len() < 2 {
-                                arcs_extracted.push(arc);
+                        ring.iter().map(|arc| {
+                            // let arc = if *arc < 0_i32 { !*arc } else { *arc };
+                            let index = translate(*arc);
+                            if ma.polygons_by_arc[index].len() < 2 {
+                                arcs_extracted.push(*arc);
                             }
                         });
                     });
@@ -156,7 +150,7 @@ impl MergeArcs {
                 // If more than one ring is returned,
                 // at most one of these rings can be the exterior;
                 // choose the one with the greatest absolute area.
-                if  arcs_vec.len() > 1 {
+                if arcs_vec.len() > 1 {
                     let mut iter_mut = arcs_vec.iter_mut();
                     let mut k = ma.area(iter_mut.next().unwrap().to_vec());
                     let mut ki;
