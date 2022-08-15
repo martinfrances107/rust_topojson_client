@@ -100,23 +100,33 @@ impl MergeArcs {
         ma.polygons.clone().iter_mut().for_each(|polygon| {
             if !polygon.underscore {
                 let mut group = vec![];
+                polygon.underscore = true;
                 let mut neighbors = vec![polygon.clone()];
 
-                polygon.underscore = true;
-                // ma.groups.push(group.clone());
-                while neighbors.pop().is_some() {
-                    group.push(polygon.v.clone());
-                    polygon.v.iter().for_each(|ring| {
-                        ring.iter().for_each(|arc| {
-                            let index = translate(*arc);
-                            ma.polygons_by_arc[index].iter_mut().for_each(|polygon| {
-                                if !polygon.underscore {
-                                    polygon.underscore = true;
-                                    neighbors.push(polygon.clone());
-                                }
+                // Handmde iterator here :- We a potentially modifiying
+                // elements ahead in the list.
+                let mut polygon_next = neighbors.pop();
+                loop {
+                    match polygon_next {
+                        Some(polygon) => {
+                            group.push(polygon.v.clone());
+                            polygon.v.iter().for_each(|ring| {
+                                ring.iter().for_each(|arc| {
+                                    let index = translate(*arc);
+                                    ma.polygons_by_arc[index].iter_mut().for_each(|polygon| {
+                                        if !polygon.underscore {
+                                            polygon.underscore = true;
+                                            neighbors.push(polygon.clone());
+                                        }
+                                    });
+                                });
                             });
-                        });
-                    });
+                            polygon_next = neighbors.pop();
+                        }
+                        None => {
+                            break;
+                        }
+                    }
                 }
             }
         });
