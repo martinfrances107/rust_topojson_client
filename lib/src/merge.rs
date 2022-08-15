@@ -168,7 +168,7 @@ impl MergeArcs {
                 }
                 arcs_vec
             })
-            .filter(|arcs| (*arcs).len() > 0)
+            .filter(|arcs| !(*arcs).is_empty())
             .collect();
 
         Value::MultiPolygon(polygon_arcs)
