@@ -20,6 +20,11 @@ where
     area.abs() // Note: doubled area!
 }
 
+/// A polygon which can be marked with a underscore
+/// to imply it has been processed.
+///
+/// In javascript object are dynamic in rust we need
+/// this wrapper( or an enum )
 #[derive(Clone, Debug)]
 struct PolygonU {
     v: Vec<ArcIndexes>,
@@ -40,12 +45,12 @@ impl PolygonU {
 pub struct MergeArcs {
     polygons_by_arc: Vec<Vec<PolygonU>>,
     polygons: Vec<PolygonU>,
-    groups: Vec<Vec<Vec<ArcIndexes>>>,
+    groups: Vec<Vec<PolygonU>>,
     topology: Topology,
 }
 
 impl MergeArcs {
-    fn new(topology: Topology) -> Self {
+    pub fn new(topology: Topology) -> Self {
         Self {
             polygons_by_arc: vec![],
             polygons: vec![],
@@ -54,6 +59,9 @@ impl MergeArcs {
         }
     }
 
+    // Proces collections of items - 'extract'ing all sub items.
+    //
+    // [Ignore lines and points.]
     fn geometry(&mut self, o: &mut Value) {
         match o {
             Value::GeometryCollection(gc) => {
@@ -70,11 +78,7 @@ impl MergeArcs {
     }
 
     /// Loop over the input pushing to internal state.
-    /// polygons_by_arc and polygons.
-    /// In the original JS objects are dynamic
-    /// So I have modified to convert polygon into polygon_u
-    /// which potential double the memory requirements.
-    /// Thinking about using drain.
+    /// polygons_by_arc and polygons.    
     fn extract(&mut self, polygon: &[Vec<i32>]) {
         polygon.iter().for_each(|ring| {
             ring.iter().for_each(|arc| {
@@ -82,8 +86,8 @@ impl MergeArcs {
                 match self.polygons_by_arc.get(index) {
                     Some(_) => self.polygons_by_arc[index].push(PolygonU::new(polygon.to_vec())),
                     None => {
-                        self.polygons_by_arc[index] = vec![];
-                        self.polygons_by_arc[index].push(PolygonU::new(polygon.to_vec()))
+                        self.polygons_by_arc
+                            .insert(index, vec![PolygonU::new(polygon.to_vec())]);
                     }
                 };
             });
@@ -92,91 +96,83 @@ impl MergeArcs {
     }
 
     /// Generate a Polygons using MergeArcs.
-    fn generate(&mut self, topology: Topology, objects: &mut [Value]) -> Value {
-        let mut ma = Self::new(topology);
-
+    pub fn generate(&mut self, objects: &mut [Value]) -> Value {
         objects.iter_mut().for_each(|o| self.geometry(o));
 
-        ma.polygons.clone().iter_mut().for_each(|polygon| {
+        self.polygons.clone().iter_mut().for_each(|polygon| {
             if !polygon.underscore {
-                let mut group = vec![];
                 polygon.underscore = true;
+
+                self.groups.push(vec![]);
+
                 let mut neighbors = vec![polygon.clone()];
 
-                // Handmde iterator here :- We a potentially modifiying
-                // elements ahead in the list.
-                let mut polygon_next = neighbors.pop();
-                loop {
-                    match polygon_next {
-                        Some(polygon) => {
-                            group.push(polygon.v.clone());
-                            polygon.v.iter().for_each(|ring| {
-                                ring.iter().for_each(|arc| {
-                                    let index = translate(*arc);
-                                    ma.polygons_by_arc[index].iter_mut().for_each(|polygon| {
-                                        if !polygon.underscore {
-                                            polygon.underscore = true;
-                                            neighbors.push(polygon.clone());
-                                        }
-                                    });
-                                });
+                // Iterate over neighbous while conditionally pushing to the tail.
+                while let Some(polygon) = neighbors.pop() {
+                    match self.groups.last_mut() {
+                        Some(lg) => lg.push(polygon.clone()),
+                        None => {}
+                    };
+                    polygon.v.iter().for_each(|ring| {
+                        ring.iter().for_each(|arc| {
+                            let index = translate(*arc);
+                            self.polygons_by_arc[index].iter_mut().for_each(|polygon| {
+                                if !polygon.underscore {
+                                    polygon.underscore = true;
+                                    neighbors.push(polygon.clone());
+                                }
                             });
-                            polygon_next = neighbors.pop();
-                        }
-                        None => {
-                            break;
-                        }
-                    }
+                        });
+                    });
                 }
             }
         });
 
-        ma.polygons
+        self.polygons
             .iter_mut()
             .for_each(|polygon| polygon.underscore = false);
 
         // Extract the exterior (unique) arcs.
-        let polygon_arcs = ma
+        let polygon_arcs = self
             .groups
-            .clone()
             .iter()
-            .map(|polygons| {
-                let mut arcs_extracted = Vec::new();
-                ma.polygons.iter().map(|polygon| {
-                    polygon.v.iter().map(|ring| {
-                        ring.iter().map(|arc| {
-                            // let arc = if *arc < 0_i32 { !*arc } else { *arc };
+            .map(|polygon| {
+                // todo can I use with_capacity() here.
+                let mut arcs = Vec::new();
+                polygon.iter().for_each(|polygon| {
+                    polygon.v.iter().for_each(|ring| {
+                        ring.iter().for_each(|arc| {
                             let index = translate(*arc);
-                            if ma.polygons_by_arc[index].len() < 2 {
-                                arcs_extracted.push(*arc);
+                            if self.polygons_by_arc[index].len() < 2 {
+                                arcs.push(*arc);
                             }
                         });
                     });
                 });
 
                 // Stich the arc into one or more rings.
-                let mut arcs_vec = stitch(ma.topology.clone(), arcs_extracted);
+                let mut arcs = stitch(&self.topology, arcs);
 
                 // If more than one ring is returned,
                 // at most one of these rings can be the exterior;
                 // choose the one with the greatest absolute area.
-                if arcs_vec.len() > 1 {
-                    let mut iter_mut = arcs_vec.iter_mut();
-                    let mut k = ma.area(iter_mut.next().unwrap().to_vec());
+                if !arcs.is_empty() {
+                    let mut iter_mut = arcs.iter_mut();
+                    let mut k = self.area(iter_mut.next().unwrap().to_vec());
                     let mut ki;
                     let mut t;
-                    for a in arcs_vec.clone().iter_mut() {
-                        ki = ma.area(a.to_vec());
+                    for a in arcs.clone().iter_mut() {
+                        ki = self.area(a.to_vec());
                         if ki > k {
                             // todo this is a swap with arcs[0]
                             t = a.clone();
-                            arcs_vec[0] = a.clone();
+                            arcs[0] = a.clone();
                             *a = t;
                             k = ki;
                         }
                     }
                 }
-                arcs_vec
+                arcs
             })
             .filter(|arcs| !(*arcs).is_empty())
             .collect();
@@ -199,18 +195,13 @@ impl MergeArcs {
 #[cfg(not(tarpaulin_include))]
 #[cfg(test)]
 mod merge_tests {
-
-    use crate::merge;
-
-    use super::*;
-    // use geo::line_string;
-    // use geo::Geometry;
-    // use geo::MultiPolygon;
-    // use geo::Polygon;
     use pretty_assertions::assert_eq;
     use topojson::NamedGeometry;
+    use topojson::Topology;
     use topojson::TransformParams;
     use topojson::Value;
+
+    use super::MergeArcs;
 
     // tape("merge ignores null geometries", function(test) {
     //     var topology = {
@@ -264,57 +255,57 @@ mod merge_tests {
     // |    |    |            |         |
     // +----+----+            +----+----+
     //
-    // #[test]
-    // fn stitches_together_two_side_by_side_polygons() {
-    //     println!("merge stitches together two side-by-side polygons");
-    //     let mut values = vec![
-    //         Value::Polygon(vec![vec![0, 1]]),
-    //         Value::Polygon(vec![vec![-1, 2]]),
-    //     ];
-    //     let polys = vec![
-    //         topojson::Geometry::new(Value::Polygon(vec![vec![0, 1]])),
-    //         topojson::Geometry::new(Value::Polygon(vec![vec![-1, 2]])),
-    //     ];
-    //     let object = Value::GeometryCollection(polys);
-    //     let topology = Topology {
-    //         arcs: vec![
-    //             vec![vec![1_f64, 1_f64], vec![1_f64, 0_f64]],
-    //             vec![
-    //                 vec![1_f64, 0_f64],
-    //                 vec![0_f64, 0_f64],
-    //                 vec![0_f64, 1_f64],
-    //                 vec![1_f64, 1_f64],
-    //             ],
-    //             vec![
-    //                 vec![1_f64, 1_f64],
-    //                 vec![2_f64, 1_f64],
-    //                 vec![2_f64, 0_f64],
-    //                 vec![1_f64, 0_f64],
-    //             ],
-    //         ],
-    //         objects: vec![NamedGeometry {
-    //             name: "foo".to_string(),
-    //             geometry: topojson::Geometry::new(object),
-    //         }],
-    //         bbox: None,
-    //         transform: Some(TransformParams {
-    //             scale: [1_f64, 1_f64],
-    //             translate: [0_f64, 0_f64],
-    //         }),
-    //         foreign_members: None,
-    //     };
-    //     let mp = Value::MultiPolygon(vec![vec![
-    //         vec![1, 0],
-    //         vec![0, 0],
-    //         vec![0, 1],
-    //         vec![1, 1],
-    //         vec![2, 1],
-    //         vec![2, 0],
-    //         vec![1, 0],
-    //     ]]);
+    #[test]
+    fn stitches_together_two_side_by_side_polygons() {
+        println!("merge stitches together two side-by-side polygons");
+        let mut values = vec![
+            Value::Polygon(vec![vec![0, 1]]),
+            Value::Polygon(vec![vec![-1, 2]]),
+        ];
+        let polys = vec![
+            topojson::Geometry::new(Value::Polygon(vec![vec![0, 1]])),
+            topojson::Geometry::new(Value::Polygon(vec![vec![-1, 2]])),
+        ];
+        let object = Value::GeometryCollection(polys);
+        let topology = Topology {
+            arcs: vec![
+                vec![vec![1_f64, 1_f64], vec![1_f64, 0_f64]],
+                vec![
+                    vec![1_f64, 0_f64],
+                    vec![0_f64, 0_f64],
+                    vec![0_f64, 1_f64],
+                    vec![1_f64, 1_f64],
+                ],
+                vec![
+                    vec![1_f64, 1_f64],
+                    vec![2_f64, 1_f64],
+                    vec![2_f64, 0_f64],
+                    vec![1_f64, 0_f64],
+                ],
+            ],
+            objects: vec![NamedGeometry {
+                name: "foo".to_string(),
+                geometry: topojson::Geometry::new(object),
+            }],
+            bbox: None,
+            transform: Some(TransformParams {
+                scale: [1_f64, 1_f64],
+                translate: [0_f64, 0_f64],
+            }),
+            foreign_members: None,
+        };
+        let mp = Value::MultiPolygon(vec![vec![
+            vec![1, 0],
+            vec![0, 0],
+            vec![0, 1],
+            vec![1, 1],
+            vec![2, 1],
+            vec![2, 0],
+            vec![1, 0],
+        ]]);
 
-    //     assert_eq!(MergeArcs::new(topology.clone()).generate(topology, &mut values), mp);
-    // }
+        assert_eq!(MergeArcs::new(topology).generate(&mut values), mp);
+    }
 
     //   //
     //   // +----+----+            +----+----+

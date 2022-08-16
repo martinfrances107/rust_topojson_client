@@ -39,7 +39,7 @@ The feature extraction section of this library has been ported as is being used 
  and topoquantize-test
 
 * Port untranslate test, Maybe?
-* neigbours.rs -- is using dynamic dispatch, in an issues involving the use of anomymous functions :-
+* neigbors.rs -- is using dynamic dispatch, in an issues involving the use of anomymous functions :-
 
   ```rust
   let indexes_by_arc = RefCell<BTreeMap<usize, ArcIndexes>>
