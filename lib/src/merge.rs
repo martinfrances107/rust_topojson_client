@@ -60,8 +60,6 @@ impl MergeArcs {
     }
 
     // Proces collections of items - 'extract'ing all sub items.
-    //
-    // [Ignore lines and points.]
     fn geometry(&mut self, o: &mut Value) {
         match o {
             Value::GeometryCollection(gc) => {
@@ -73,6 +71,7 @@ impl MergeArcs {
             Value::MultiPolygon(mp) => {
                 mp.iter_mut().for_each(|x| self.extract(x));
             }
+            // Ignore ValuesMultiLines, Values::Lines,  Values::Points etc.
             _ => {}
         }
     }
