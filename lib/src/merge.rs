@@ -1,3 +1,6 @@
+use std::cell::RefCell;
+use std::rc::Rc;
+
 use geo::{CoordFloat, Coordinate, Geometry};
 use topojson::{ArcIndexes, Topology, Value};
 
@@ -43,20 +46,19 @@ impl PolygonU {
     fn is_not_makred(&self) -> bool {
         !self.underscore
     }
-
-    // Return a marked copy of the original.
-    fn marked_copy(&self) -> Self {
-        let mut out = self.clone();
-        out.underscore = true;
-        out
-    }
 }
 
 /// todo
 #[derive(Clone, Debug)]
 pub struct MergeArcs {
-    polygons_by_arc: Vec<Vec<PolygonU>>,
-    polygons: Vec<PolygonU>,
+    polygons: Vec<Rc<RefCell<PolygonU>>>,
+
+    // Rc<RefCell<_>>
+    // A Shared refeerence is needed here becuase changes to the contents
+    // of the 'polygon' refcell should be observed in multiple rows of the
+    // polygons_by_arc table.
+    polygons_by_arc: Vec<Vec<Rc<RefCell<PolygonU>>>>,
+
     groups: Vec<Vec<PolygonU>>,
     topology: Topology,
 }
@@ -91,19 +93,22 @@ impl MergeArcs {
     /// Loop over the input pushing to internal state.
     /// polygons_by_arc and polygons.    
     fn extract(&mut self, polygon: &[Vec<i32>]) {
+        // Value to be stored and refered to .. in pba
+        let pu = Rc::new(RefCell::new(PolygonU::new(polygon.to_vec())));
+
         polygon.iter().for_each(|ring| {
             ring.iter().for_each(|arc| {
                 let index = translate(*arc);
                 match self.polygons_by_arc.get(index) {
-                    Some(_) => self.polygons_by_arc[index].push(PolygonU::new(polygon.to_vec())),
+                    Some(_) => self.polygons_by_arc[index].push(pu.clone()),
                     None => {
-                        self.polygons_by_arc
-                            .insert(index, vec![PolygonU::new(polygon.to_vec())]);
+                        self.polygons_by_arc.insert(index, vec![pu.clone()]);
                     }
                 };
             });
         });
-        self.polygons.push(PolygonU::new(polygon.to_vec()));
+
+        self.polygons.push(pu);
     }
 
     /// Generate a Polygons using MergeArcs.
@@ -111,20 +116,24 @@ impl MergeArcs {
         objects.iter().for_each(|o| self.geometry(o));
 
         self.polygons.clone().iter().for_each(|polygon| {
-            if polygon.is_not_makred() {
+            if polygon.borrow().is_not_makred() {
                 let mut group: Vec<PolygonU> = vec![];
 
-                let mut neighbors = vec![polygon.marked_copy()];
+                polygon.borrow_mut().underscore = true;
+
+                let mut neighbors = vec![polygon];
 
                 // Iterate over neighbors while conditionally pushing to the tail.
                 while let Some(polygon) = neighbors.pop() {
-                    group.push(polygon.clone());
-                    polygon.v.iter().for_each(|ring| {
+                    group.push(polygon.borrow().clone());
+                    polygon.borrow().v.iter().for_each(|ring| {
                         ring.iter().for_each(|arc| {
                             let index = translate(*arc);
                             self.polygons_by_arc[index].iter().for_each(|polygon| {
-                                if polygon.is_not_makred() {
-                                    neighbors.push(polygon.marked_copy());
+                                if polygon.borrow().is_not_makred() {
+                                    polygon.borrow_mut().underscore = true;
+
+                                    neighbors.push(&polygon);
                                 }
                             });
                         });
@@ -136,16 +145,16 @@ impl MergeArcs {
 
         self.polygons
             .iter_mut()
-            .for_each(|polygon| polygon.underscore = false);
+            .for_each(|polygon| polygon.borrow_mut().underscore = false);
 
         // Extract the exterior (unique) arcs.
         let polygon_arcs = self
             .groups
             .iter()
-            .map(|polygon| {
+            .map(|polygons| {
                 // todo can I use with_capacity() here.
                 let mut arcs = Vec::new();
-                polygon.iter().for_each(|polygon| {
+                polygons.iter().for_each(|polygon| {
                     polygon.v.iter().for_each(|ring| {
                         ring.iter().for_each(|arc| {
                             let index = translate(*arc);
