@@ -1,4 +1,6 @@
 use std::collections::HashMap;
+use std::collections::VecDeque;
+use std::iter::FromIterator;
 
 use topojson::{ArcIndexes, Topology};
 
@@ -27,6 +29,90 @@ pub(super) fn stitch(topology: &Topology, mut arcs: ArcIndexes) -> Vec<ArcIndexe
         }
     }
 
+    arcs.iter().for_each(|i| {
+        let e = stitch.ends(*i);
+        // TODO could I use  or_default() instead of .unwrap()
+        let start: FragmentKey = gen_key(e.get(0).unwrap());
+        let end = gen_key(e.get(1).unwrap());
+
+        if let Some(f) = stitch.fragment_by_end.get(&start.clone()) {
+            let mut f = f.clone();
+            stitch.fragment_by_end.remove(&f.end.clone().unwrap());
+            f.items.push_back(*i);
+            f.end = Some(end.clone());
+            if let Some(g) = stitch.fragment_by_end.get(&end) {
+                stitch.fragment_by_start.remove(&start);
+                let fg = if *g == f {
+                    f.clone()
+                } else {
+                    let iter = f
+                        .items
+                        .clone()
+                        .into_iter()
+                        .chain(g.items.clone().into_iter());
+                    Fragment {
+                        items: VecDeque::from_iter(iter),
+                        start: f.start.clone(),
+                        end: f.end.clone(),
+                    }
+                };
+
+                stitch
+                    .fragment_by_start
+                    .insert(fg.start.clone().unwrap(), fg.clone());
+                stitch.fragment_by_end.insert(fg.start.clone().unwrap(), fg);
+            } else if let Some(x) = stitch.fragment_by_start.get_mut(f.start.as_ref().unwrap()) {
+                *x = f.clone();
+
+                if let Some(x) = stitch.fragment_by_end.get_mut(f.end.as_ref().unwrap()) {
+                    *x = f.clone()
+                };
+            }
+        } else if let Some(f) = stitch.fragment_by_start.get(&end) {
+            let mut f = f.clone();
+            stitch.fragment_by_start.remove(&f.start.unwrap());
+            f.items.push_front(*i);
+            f.start = Some(start.clone());
+
+            if let Some(g) = stitch.fragment_by_end.get(&start) {
+                let g = g.clone();
+                stitch.fragment_by_end.remove(g.end.as_ref().unwrap());
+                let gf = if g == f {
+                    f.clone()
+                } else {
+                    let iter = f
+                        .items
+                        .clone()
+                        .into_iter()
+                        .chain(g.items.clone().into_iter());
+                    Fragment {
+                        items: VecDeque::from_iter(iter),
+                        start: g.start.clone(),
+                        end: f.end.clone(),
+                    }
+                };
+
+                stitch
+                    .fragment_by_start
+                    .insert(gf.start.clone().unwrap(), gf.clone());
+                stitch.fragment_by_end.insert(gf.clone().end.unwrap(), gf);
+            } else {
+                stitch
+                    .fragment_by_start
+                    .insert(f.start.clone().unwrap(), f.clone());
+                stitch.fragment_by_end.insert(f.end.clone().unwrap(), f);
+            }
+        } else {
+            let f = Fragment {
+                items: VecDeque::from(vec![*i]),
+                start: Some(start.clone()),
+                end: Some(end.clone()),
+            };
+            stitch.fragment_by_start.insert(start, f.clone());
+            stitch.fragment_by_end.insert(end, f);
+        }
+    });
+
     stitch.flush(
         &mut stitch.fragment_by_end.clone(),
         &mut stitch.fragment_by_start.clone(),
@@ -36,22 +122,52 @@ pub(super) fn stitch(topology: &Topology, mut arcs: ArcIndexes) -> Vec<ArcIndexe
         &mut stitch.fragment_by_end.clone(),
     );
 
-    stitch.fragments
+    // Conversion of Vec<Fragment> to Vec<ArcIndexes>
+    //
+    // Compared with JS there is an extra loop here
+    // which has time and memory implications.
+    let mut fragments_plain: Vec<ArcIndexes> = stitch
+        .fragments
+        .iter()
+        .map(|f| Vec::from(f.items.clone()))
+        .collect();
+
+    arcs.iter().for_each(|i| {
+        if stitch.stitched_arcs[translate(*i)] != 0i32 {
+            fragments_plain.push(vec![*i]);
+        }
+    });
+
+    fragments_plain
 }
 
-#[derive(Clone, Debug)]
+// Returns a key, used in the Fragment struct.
+fn gen_key(input: &[f64]) -> FragmentKey {
+    let output_str: Vec<String> = input
+        .iter()
+        .map(|f| {
+            let int = *f as i32;
+            int.to_string()
+        })
+        .collect();
+    output_str.join("-")
+}
+
+#[derive(Clone, Debug, PartialEq)]
 struct Fragment {
-    items: Vec<i32>,
-    start: Option<[i32; 2]>,
-    end: Option<[i32; 2]>,
+    pub items: VecDeque<i32>,
+    start: Option<String>,
+    end: Option<String>,
 }
+
+type FragmentKey = String;
 
 #[derive(Clone, Debug)]
 struct Stitch<'a> {
     stitched_arcs: ArcIndexes,
-    fragment_by_start: HashMap<String, Fragment>,
-    fragment_by_end: HashMap<String, Fragment>,
-    fragments: Vec<ArcIndexes>,
+    fragment_by_start: HashMap<FragmentKey, Fragment>,
+    fragment_by_end: HashMap<FragmentKey, Fragment>,
+    fragments: Vec<Fragment>,
     empty_index: usize,
     topology: &'a Topology,
 }
@@ -81,8 +197,8 @@ impl<'a> Stitch<'a> {
 
     fn flush(
         &mut self,
-        fragment_by_end: &mut HashMap<String, Fragment>,
-        fragment_by_start: &mut HashMap<String, Fragment>,
+        fragment_by_end: &mut HashMap<FragmentKey, Fragment>,
+        fragment_by_start: &mut HashMap<FragmentKey, Fragment>,
     ) {
         for k in fragment_by_end.keys() {
             fragment_by_start.remove(k);
@@ -91,10 +207,10 @@ impl<'a> Stitch<'a> {
                 f.end = None;
 
                 for i in f.items.iter() {
-                    self.stitched_arcs[translate(*i)] = 1_i32;
+                    self.stitched_arcs[translate(*i as i32)] = 1_i32;
                 }
 
-                self.fragments.push(f.items.clone())
+                self.fragments.push(f.clone())
             }
         }
     }

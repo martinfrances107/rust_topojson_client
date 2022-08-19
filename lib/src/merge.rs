@@ -132,8 +132,7 @@ impl MergeArcs {
                             self.polygons_by_arc[index].iter().for_each(|polygon| {
                                 if polygon.borrow().is_not_makred() {
                                     polygon.borrow_mut().underscore = true;
-
-                                    neighbors.push(&polygon);
+                                    neighbors.push(polygon);
                                 }
                             });
                         });
