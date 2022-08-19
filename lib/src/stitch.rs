@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use std::collections::VecDeque;
 use std::iter::FromIterator;
 
@@ -8,9 +8,9 @@ use crate::translate;
 
 pub(super) fn stitch(topology: &Topology, mut arcs: ArcIndexes) -> Vec<ArcIndexes> {
     let mut stitch = Stitch {
-        stitched_arcs: vec![],
-        fragment_by_start: HashMap::new(),
-        fragment_by_end: HashMap::new(),
+        stitched_arcs: BTreeMap::new(),
+        fragment_by_start: BTreeMap::new(),
+        fragment_by_end: BTreeMap::new(),
         fragments: vec![],
         // Special case, JS uses, -1 which is not availble here.
         empty_index: usize::max_value(),
@@ -45,11 +45,7 @@ pub(super) fn stitch(topology: &Topology, mut arcs: ArcIndexes) -> Vec<ArcIndexe
                 let fg = if *g == f {
                     f.clone()
                 } else {
-                    let iter = f
-                        .items
-                        .clone()
-                        .into_iter()
-                        .chain(g.items.clone().into_iter());
+                    let iter = f.items.into_iter().chain(g.items.clone().into_iter());
                     Fragment {
                         items: VecDeque::from_iter(iter),
                         start: f.start.clone(),
@@ -133,7 +129,7 @@ pub(super) fn stitch(topology: &Topology, mut arcs: ArcIndexes) -> Vec<ArcIndexe
         .collect();
 
     arcs.iter().for_each(|i| {
-        if stitch.stitched_arcs[translate(*i)] != 0i32 {
+        if stitch.stitched_arcs[&translate(*i)] != 0i32 {
             fragments_plain.push(vec![*i]);
         }
     });
@@ -164,9 +160,9 @@ type FragmentKey = String;
 
 #[derive(Clone, Debug)]
 struct Stitch<'a> {
-    stitched_arcs: ArcIndexes,
-    fragment_by_start: HashMap<FragmentKey, Fragment>,
-    fragment_by_end: HashMap<FragmentKey, Fragment>,
+    stitched_arcs: BTreeMap<usize, i32>,
+    fragment_by_start: BTreeMap<FragmentKey, Fragment>,
+    fragment_by_end: BTreeMap<FragmentKey, Fragment>,
     fragments: Vec<Fragment>,
     empty_index: usize,
     topology: &'a Topology,
@@ -197,8 +193,8 @@ impl<'a> Stitch<'a> {
 
     fn flush(
         &mut self,
-        fragment_by_end: &mut HashMap<FragmentKey, Fragment>,
-        fragment_by_start: &mut HashMap<FragmentKey, Fragment>,
+        fragment_by_end: &mut BTreeMap<FragmentKey, Fragment>,
+        fragment_by_start: &mut BTreeMap<FragmentKey, Fragment>,
     ) {
         for k in fragment_by_end.keys() {
             fragment_by_start.remove(k);
@@ -207,7 +203,7 @@ impl<'a> Stitch<'a> {
                 f.end = None;
 
                 for i in f.items.iter() {
-                    self.stitched_arcs[translate(*i as i32)] = 1_i32;
+                    self.stitched_arcs.insert(translate(*i), 1);
                 }
 
                 self.fragments.push(f.clone())
