@@ -1,6 +1,7 @@
 use std::collections::BTreeMap;
 use std::collections::VecDeque;
 use std::iter::FromIterator;
+use std::num::Wrapping;
 
 use topojson::{ArcIndexes, Topology};
 
@@ -12,20 +13,22 @@ pub(super) fn stitch(topology: &Topology, mut arcs: ArcIndexes) -> Vec<ArcIndexe
         fragment_by_start: BTreeMap::new(),
         fragment_by_end: BTreeMap::new(),
         fragments: vec![],
-        // Special case, JS uses, -1 which is not availble here.
-        empty_index: usize::max_value(),
         topology,
     };
+
+    // In javascript emptyIndex = -1
+    // In RUST that is, what when incremented will be 0usize.
+    let mut empty_index = Wrapping(usize::MAX);
 
     // Stitch empty arcs first, since they may be subsumed by other arcs.
     // Cannot use conventional iterator here as we are swapping
     // element as we loop.
     for j in 0..arcs.len() {
         let i = arcs[j];
-        let arc = &mut topology.arcs[translate(i)].clone();
+        let arc = &topology.arcs[translate(i)];
         if arc.len() < 3usize && arc[1][0] == 0_f64 && arc[1][1] == 0_f64 {
-            stitch.empty_index += 1;
-            arcs.swap(stitch.empty_index, j);
+            empty_index += 1;
+            arcs.swap(empty_index.0, j);
         }
     }
 
@@ -133,7 +136,6 @@ pub(super) fn stitch(topology: &Topology, mut arcs: ArcIndexes) -> Vec<ArcIndexe
             fragments_plain.push(vec![*i]);
         }
     });
-
     fragments_plain
 }
 
@@ -146,7 +148,7 @@ fn gen_key(input: &[f64]) -> FragmentKey {
             int.to_string()
         })
         .collect();
-    output_str.join("-")
+    output_str.join(",")
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -164,7 +166,6 @@ struct Stitch<'a> {
     fragment_by_start: BTreeMap<FragmentKey, Fragment>,
     fragment_by_end: BTreeMap<FragmentKey, Fragment>,
     fragments: Vec<Fragment>,
-    empty_index: usize,
     topology: &'a Topology,
 }
 
@@ -191,23 +192,23 @@ impl<'a> Stitch<'a> {
         }
     }
 
+    /// Iterate over fragment_by_end :-
+    /// deleting elements in fragment_by_start
+    /// building stitched_by_arcs and fragments.
     fn flush(
         &mut self,
         fragment_by_end: &mut BTreeMap<FragmentKey, Fragment>,
         fragment_by_start: &mut BTreeMap<FragmentKey, Fragment>,
     ) {
-        for k in fragment_by_end.keys() {
+        for (k, f) in fragment_by_end.iter() {
             fragment_by_start.remove(k);
-            if let Some(f) = fragment_by_end.clone().get_mut(k) {
-                f.start = None;
-                f.end = None;
-
-                for i in f.items.iter() {
-                    self.stitched_arcs.insert(translate(*i), 1);
-                }
-
-                self.fragments.push(f.clone())
+            let mut f = f.clone();
+            f.start = None;
+            f.end = None;
+            for i in f.items.iter() {
+                self.stitched_arcs.insert(translate(*i), 1);
             }
+            self.fragments.push(f)
         }
     }
 }
