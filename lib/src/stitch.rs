@@ -1,4 +1,5 @@
 use std::collections::BTreeMap;
+use std::collections::HashSet;
 use std::collections::VecDeque;
 use std::iter::FromIterator;
 use std::num::Wrapping;
@@ -9,7 +10,7 @@ use crate::translate;
 
 pub(super) fn stitch(topology: &Topology, mut arcs: ArcIndexes) -> Vec<ArcIndexes> {
     let mut stitch = Stitch {
-        stitched_arcs: BTreeMap::new(),
+        stitched_arcs: HashSet::new(),
         fragment_by_start: BTreeMap::new(),
         fragment_by_end: BTreeMap::new(),
         fragments: vec![],
@@ -41,7 +42,7 @@ pub(super) fn stitch(topology: &Topology, mut arcs: ArcIndexes) -> Vec<ArcIndexe
         let f = stitch.fragment_by_end.get(&start);
         if f.is_some() {
             // let key = *f.clone().unwrap().end.as_ref().unwrap().clone().to_string();
-            let key = String::from(f.clone().unwrap().end.as_ref().unwrap().clone().to_string());
+            let key = f.unwrap().end.as_ref().unwrap().clone();
             stitch.fragment_by_end.remove(&key);
 
             // Need to recheck for the exitence of f, as it may have just been .removed().
@@ -62,7 +63,7 @@ pub(super) fn stitch(topology: &Topology, mut arcs: ArcIndexes) -> Vec<ArcIndexe
                         Fragment {
                             items: VecDeque::from_iter(f_then_g),
                             start: f.start.clone(),
-                            end: g.end.clone(),
+                            end: g.end,
                         }
                     };
 
@@ -142,7 +143,7 @@ pub(super) fn stitch(topology: &Topology, mut arcs: ArcIndexes) -> Vec<ArcIndexe
         .collect();
 
     arcs.iter().for_each(|i| {
-        if stitch.stitched_arcs[&translate(*i)] != 0i32 {
+        if stitch.stitched_arcs.contains(&translate(*i)) {
             fragments_plain.push(vec![*i]);
         }
     });
@@ -172,7 +173,7 @@ type FragmentKey = String;
 
 #[derive(Clone, Debug)]
 struct Stitch<'a> {
-    stitched_arcs: BTreeMap<usize, i32>,
+    stitched_arcs: HashSet<usize>,
     fragment_by_start: BTreeMap<FragmentKey, Fragment>,
     fragment_by_end: BTreeMap<FragmentKey, Fragment>,
     fragments: Vec<Fragment>,
@@ -216,7 +217,7 @@ impl<'a> Stitch<'a> {
             f.start = None;
             f.end = None;
             for i in f.items.iter() {
-                self.stitched_arcs.insert(translate(*i), 1);
+                self.stitched_arcs.insert(translate(*i));
             }
             self.fragments.push(f)
         }

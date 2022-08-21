@@ -43,7 +43,7 @@ impl PolygonU {
     }
 
     #[inline]
-    fn is_not_makred(&self) -> bool {
+    fn is_not_marked(&self) -> bool {
         !self.underscore
     }
 }
@@ -116,7 +116,7 @@ impl MergeArcs {
         objects.iter().for_each(|o| self.geometry(o));
 
         self.polygons.clone().iter().for_each(|polygon| {
-            if polygon.borrow().is_not_makred() {
+            if polygon.borrow().is_not_marked() {
                 let mut group: Vec<PolygonU> = vec![];
 
                 polygon.borrow_mut().underscore = true;
@@ -130,7 +130,7 @@ impl MergeArcs {
                         ring.iter().for_each(|arc| {
                             let index = translate(*arc);
                             self.polygons_by_arc[index].iter().for_each(|polygon| {
-                                if polygon.borrow().is_not_makred() {
+                                if polygon.borrow().is_not_marked() {
                                     polygon.borrow_mut().underscore = true;
                                     neighbors.push(polygon);
                                 }
