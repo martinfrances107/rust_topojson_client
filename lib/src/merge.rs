@@ -302,10 +302,7 @@ mod merge_tests {
     //             geometry: topojson::Geometry::new(object),
     //         }],
     //         bbox: None,
-    //         transform: Some(TransformParams {
-    //             scale: [1_f64, 1_f64],
-    //             translate: [0_f64, 0_f64],
-    //         }),
+    //         transform: None,
     //         foreign_members: None,
     //     };
     //     let mp = Value::MultiPolygon(vec![vec![

@@ -38,37 +38,47 @@ pub(super) fn stitch(topology: &Topology, mut arcs: ArcIndexes) -> Vec<ArcIndexe
         let start: FragmentKey = gen_key(e.get(0).unwrap());
         let end = gen_key(e.get(1).unwrap());
 
-        if let Some(f) = stitch.fragment_by_end.get(&start.clone()) {
-            let mut f = f.clone();
-            stitch.fragment_by_end.remove(&f.end.clone().unwrap());
-            f.items.push_back(*i);
-            f.end = Some(end.clone());
-            if let Some(g) = stitch.fragment_by_end.get(&end) {
-                stitch.fragment_by_start.remove(&start);
-                let fg = if *g == f {
-                    f.clone()
+        let f = stitch.fragment_by_end.get(&start);
+        if f.is_some() {
+            // let key = *f.clone().unwrap().end.as_ref().unwrap().clone().to_string();
+            let key = String::from(f.clone().unwrap().end.as_ref().unwrap().clone().to_string());
+            stitch.fragment_by_end.remove(&key);
+
+            // Need to recheck for the exitence of f, as it may have just been .removed().
+            // We can't like Javascript push undefined at this point.
+            if let Some(f) = stitch.fragment_by_end.get(&start) {
+                let mut f = f.to_owned();
+                f.items.push_back(*i);
+                f.end = Some(end.clone());
+
+                if let Some(g) = stitch.fragment_by_start.get(&end) {
+                    let g = g.clone();
+                    stitch.fragment_by_start.remove(&start);
+
+                    let fg = if g == f {
+                        f.clone()
+                    } else {
+                        let f_then_g = f.items.into_iter().chain(g.items.into_iter());
+                        Fragment {
+                            items: VecDeque::from_iter(f_then_g),
+                            start: f.start.clone(),
+                            end: g.end.clone(),
+                        }
+                    };
+
+                    stitch
+                        .fragment_by_start
+                        .insert(fg.start.clone().unwrap(), fg.clone());
+                    stitch.fragment_by_end.insert(fg.end.clone().unwrap(), fg);
                 } else {
-                    let iter = f.items.into_iter().chain(g.items.clone().into_iter());
-                    Fragment {
-                        items: VecDeque::from_iter(iter),
-                        start: f.start.clone(),
-                        end: f.end.clone(),
-                    }
-                };
-
-                stitch
-                    .fragment_by_start
-                    .insert(fg.start.clone().unwrap(), fg.clone());
-                stitch.fragment_by_end.insert(fg.start.clone().unwrap(), fg);
-            } else if let Some(x) = stitch.fragment_by_start.get_mut(f.start.as_ref().unwrap()) {
-                *x = f.clone();
-
-                if let Some(x) = stitch.fragment_by_end.get_mut(f.end.as_ref().unwrap()) {
-                    *x = f.clone()
-                };
+                    stitch
+                        .fragment_by_start
+                        .insert(f.start.clone().unwrap(), f.clone());
+                    stitch.fragment_by_end.insert(f.end.clone().unwrap(), f);
+                }
             }
         } else if let Some(f) = stitch.fragment_by_start.get(&end) {
-            let mut f = f.clone();
+            let mut f = f.to_owned();
             stitch.fragment_by_start.remove(&f.start.unwrap());
             f.items.push_front(*i);
             f.start = Some(start.clone());
@@ -79,13 +89,13 @@ pub(super) fn stitch(topology: &Topology, mut arcs: ArcIndexes) -> Vec<ArcIndexe
                 let gf = if g == f {
                     f.clone()
                 } else {
-                    let iter = f
+                    let g_then_f = g
                         .items
                         .clone()
                         .into_iter()
-                        .chain(g.items.clone().into_iter());
+                        .chain(f.items.clone().into_iter());
                     Fragment {
-                        items: VecDeque::from_iter(iter),
+                        items: VecDeque::from_iter(g_then_f),
                         start: g.start.clone(),
                         end: f.end.clone(),
                     }
