@@ -45,7 +45,7 @@ pub(super) fn stitch(topology: &Topology, mut arcs: ArcIndexes) -> Vec<ArcIndexe
             let key = f.clone().borrow_mut().end.as_ref().unwrap().clone();
             stitch.fragment_by_end.remove(&key);
             f.borrow_mut().items.push_back(*i);
-            f.borrow_mut().end = Some(end.clone());
+            f.borrow_mut().end = Some(end);
 
             if let Some(g) = stitch.fragment_by_start.get(&end) {
                 let g = g.clone();
@@ -64,7 +64,7 @@ pub(super) fn stitch(topology: &Topology, mut arcs: ArcIndexes) -> Vec<ArcIndexe
                             .chain(g.borrow_mut().items.iter())
                             .copied()
                             .collect(),
-                        start: f.borrow_mut().start.clone(),
+                        start: f.borrow_mut().start,
                         end: Some((g).borrow_mut().end.as_ref().unwrap().clone()),
                     }))
                 };
@@ -75,17 +75,17 @@ pub(super) fn stitch(topology: &Topology, mut arcs: ArcIndexes) -> Vec<ArcIndexe
             } else {
                 stitch
                     .fragment_by_start
-                    .insert(f.borrow_mut().start.clone().unwrap(), f.clone());
+                    .insert(f.borrow_mut().start.unwrap(), f.clone());
                 stitch
                     .fragment_by_end
-                    .insert(f.borrow_mut().end.clone().unwrap(), f.clone());
+                    .insert(f.borrow_mut().end.unwrap(), f.clone());
             }
         } else if let Some(f) = stitch.fragment_by_start.get(&end) {
             let f = f.clone();
             let key = f.borrow_mut().start.as_ref().unwrap().clone();
             stitch.fragment_by_start.remove(&key);
             f.borrow_mut().items.push_front(*i);
-            f.borrow_mut().start = Some(start.clone());
+            f.borrow_mut().start = Some(start);
 
             if let Some(g) = stitch.fragment_by_end.get(&start) {
                 let g = g.clone();
@@ -103,34 +103,34 @@ pub(super) fn stitch(topology: &Topology, mut arcs: ArcIndexes) -> Vec<ArcIndexe
                         .chain(f.borrow_mut().items.clone().into_iter());
                     Rc::new(RefCell::new(Fragment {
                         items: VecDeque::from_iter(g_then_f),
-                        start: g.borrow().start.clone(),
-                        end: f.borrow_mut().end.clone(),
+                        start: g.borrow().start,
+                        end: f.borrow_mut().end,
                     }))
                 };
 
-                let key = gf.borrow().start.clone().unwrap();
+                let key = gf.borrow().start.unwrap();
                 stitch.fragment_by_start.insert(key, gf.clone());
-                let key = gf.borrow().end.clone().unwrap();
+                let key = gf.borrow().end.unwrap();
                 stitch.fragment_by_end.insert(key, gf);
             } else {
-                let key = f.borrow_mut().start.clone().unwrap();
+                let key = f.borrow_mut().start.unwrap();
                 stitch.fragment_by_start.insert(key, f.clone());
-                let key = f.borrow_mut().end.clone().unwrap();
+                let key = f.borrow_mut().end.unwrap();
                 stitch.fragment_by_end.insert(key, f);
             }
         } else {
             let f = Rc::new(RefCell::new(Fragment {
                 items: VecDeque::from(vec![*i]),
-                start: Some(start.clone()),
-                end: Some(end.clone()),
+                start: Some(start),
+                end: Some(end),
             }));
             stitch.fragment_by_start.insert(start, f.clone());
             stitch.fragment_by_end.insert(end, f);
         }
     });
 
-    // dbg!(stitch.fragment_by_start.clone());
-    // dbg!(stitch.fragment_by_end.clone());
+    dbg!(stitch.fragment_by_start.clone());
+    dbg!(stitch.fragment_by_end.clone());
 
     stitch.flush(
         &mut stitch.fragment_by_end.clone(),
@@ -156,29 +156,25 @@ pub(super) fn stitch(topology: &Topology, mut arcs: ArcIndexes) -> Vec<ArcIndexe
             fragments_plain.push(vec![*i]);
         }
     });
+
+    dbg!(&fragments_plain);
     fragments_plain
 }
 
 // Returns a key, used in the Fragment struct.
 fn gen_key(input: &[f64]) -> FragmentKey {
-    let output_str: Vec<String> = input
-        .iter()
-        .map(|f| {
-            let int = *f as i32;
-            int.to_string()
-        })
-        .collect();
-    output_str.join(",")
+    debug_assert_eq!(input.len(), 2);
+    (input[0] as i32, input[1] as i32)
 }
 
 #[derive(Clone, Debug, PartialEq)]
 struct Fragment {
     pub items: VecDeque<i32>,
-    start: Option<String>,
-    end: Option<String>,
+    start: Option<FragmentKey>,
+    end: Option<FragmentKey>,
 }
 
-type FragmentKey = String;
+type FragmentKey = (i32, i32);
 
 #[derive(Clone, Debug)]
 struct Stitch<'a> {
@@ -230,5 +226,7 @@ impl<'a> Stitch<'a> {
             }
             self.fragments.push(f.clone())
         }
+        dbg!("exit flush ");
+        dbg!(&self.fragments);
     }
 }
