@@ -1,8 +1,10 @@
+use std::cell::RefCell;
 use std::collections::BTreeMap;
 use std::collections::HashSet;
 use std::collections::VecDeque;
 use std::iter::FromIterator;
 use std::num::Wrapping;
+use std::rc::Rc;
 
 use topojson::{ArcIndexes, Topology};
 
@@ -39,89 +41,96 @@ pub(super) fn stitch(topology: &Topology, mut arcs: ArcIndexes) -> Vec<ArcIndexe
         let start: FragmentKey = gen_key(e.get(0).unwrap());
         let end = gen_key(e.get(1).unwrap());
 
-        let f = stitch.fragment_by_end.get(&start);
-        if f.is_some() {
-            // let key = *f.clone().unwrap().end.as_ref().unwrap().clone().to_string();
-            let key = f.unwrap().end.as_ref().unwrap().clone();
+        if let Some(f) = stitch.fragment_by_end.clone().get(&start) {
+            let key = f.clone().borrow_mut().end.as_ref().unwrap().clone();
             stitch.fragment_by_end.remove(&key);
+            f.borrow_mut().items.push_back(*i);
+            f.borrow_mut().end = Some(end.clone());
 
-            // Need to recheck for the exitence of f, as it may have just been .removed().
-            // We can't like Javascript push undefined at this point.
-            if let Some(f) = stitch.fragment_by_end.get(&start) {
-                let mut f = f.to_owned();
-                f.items.push_back(*i);
-                f.end = Some(end.clone());
-
-                if let Some(g) = stitch.fragment_by_start.get(&end) {
-                    let g = g.clone();
-                    stitch.fragment_by_start.remove(&start);
-
-                    let fg = if g == f {
-                        f.clone()
-                    } else {
-                        let f_then_g = f.items.into_iter().chain(g.items.into_iter());
-                        Fragment {
-                            items: VecDeque::from_iter(f_then_g),
-                            start: f.start.clone(),
-                            end: g.end,
-                        }
-                    };
-
-                    stitch
-                        .fragment_by_start
-                        .insert(fg.start.clone().unwrap(), fg.clone());
-                    stitch.fragment_by_end.insert(fg.end.clone().unwrap(), fg);
-                } else {
-                    stitch
-                        .fragment_by_start
-                        .insert(f.start.clone().unwrap(), f.clone());
-                    stitch.fragment_by_end.insert(f.end.clone().unwrap(), f);
-                }
-            }
-        } else if let Some(f) = stitch.fragment_by_start.get(&end) {
-            let mut f = f.to_owned();
-            stitch.fragment_by_start.remove(&f.start.unwrap());
-            f.items.push_front(*i);
-            f.start = Some(start.clone());
-
-            if let Some(g) = stitch.fragment_by_end.get(&start) {
+            if let Some(g) = stitch.fragment_by_start.get(&end) {
                 let g = g.clone();
-                stitch.fragment_by_end.remove(g.end.as_ref().unwrap());
-                let gf = if g == f {
-                    f.clone()
-                } else {
-                    let g_then_f = g
-                        .items
-                        .clone()
-                        .into_iter()
-                        .chain(f.items.clone().into_iter());
-                    Fragment {
-                        items: VecDeque::from_iter(g_then_f),
-                        start: g.start.clone(),
-                        end: f.end.clone(),
-                    }
-                };
-
                 stitch
                     .fragment_by_start
-                    .insert(gf.start.clone().unwrap(), gf.clone());
-                stitch.fragment_by_end.insert(gf.clone().end.unwrap(), gf);
+                    .remove(&(g).borrow_mut().start.as_ref().unwrap().clone());
+
+                let fg = if g == *f {
+                    f.clone()
+                } else {
+                    Rc::new(RefCell::new(Fragment {
+                        items: f
+                            .borrow_mut()
+                            .items
+                            .iter()
+                            .chain(g.borrow_mut().items.iter())
+                            .copied()
+                            .collect(),
+                        start: f.borrow_mut().start.clone(),
+                        end: Some((g).borrow_mut().end.as_ref().unwrap().clone()),
+                    }))
+                };
+                let key = f.clone().borrow_mut().end.as_ref().unwrap().clone();
+                stitch.fragment_by_start.insert(key, fg.clone());
+                let key = fg.borrow_mut().end.clone().unwrap();
+                stitch.fragment_by_end.insert(key, fg);
             } else {
                 stitch
                     .fragment_by_start
-                    .insert(f.start.clone().unwrap(), f.clone());
-                stitch.fragment_by_end.insert(f.end.clone().unwrap(), f);
+                    .insert(f.borrow_mut().start.clone().unwrap(), f.clone());
+                stitch
+                    .fragment_by_end
+                    .insert(f.borrow_mut().end.clone().unwrap(), f.clone());
+            }
+        } else if let Some(f) = stitch.fragment_by_start.get(&end) {
+            let f = f.clone();
+            let key = f.borrow_mut().start.as_ref().unwrap().clone();
+            stitch.fragment_by_start.remove(&key);
+            f.borrow_mut().items.push_front(*i);
+            f.borrow_mut().start = Some(start.clone());
+
+            if let Some(g) = stitch.fragment_by_end.get(&start) {
+                let g = g.clone();
+                stitch
+                    .fragment_by_end
+                    .remove(g.borrow().end.as_ref().unwrap());
+                let gf = if g == f {
+                    f
+                } else {
+                    let g_then_f = g
+                        .borrow()
+                        .items
+                        .clone()
+                        .into_iter()
+                        .chain(f.borrow_mut().items.clone().into_iter());
+                    Rc::new(RefCell::new(Fragment {
+                        items: VecDeque::from_iter(g_then_f),
+                        start: g.borrow().start.clone(),
+                        end: f.borrow_mut().end.clone(),
+                    }))
+                };
+
+                let key = gf.borrow().start.clone().unwrap();
+                stitch.fragment_by_start.insert(key, gf.clone());
+                let key = gf.borrow().end.clone().unwrap();
+                stitch.fragment_by_end.insert(key, gf);
+            } else {
+                let key = f.borrow_mut().start.clone().unwrap();
+                stitch.fragment_by_start.insert(key, f.clone());
+                let key = f.borrow_mut().end.clone().unwrap();
+                stitch.fragment_by_end.insert(key, f);
             }
         } else {
-            let f = Fragment {
+            let f = Rc::new(RefCell::new(Fragment {
                 items: VecDeque::from(vec![*i]),
                 start: Some(start.clone()),
                 end: Some(end.clone()),
-            };
+            }));
             stitch.fragment_by_start.insert(start, f.clone());
             stitch.fragment_by_end.insert(end, f);
         }
     });
+
+    // dbg!(stitch.fragment_by_start.clone());
+    // dbg!(stitch.fragment_by_end.clone());
 
     stitch.flush(
         &mut stitch.fragment_by_end.clone(),
@@ -174,8 +183,8 @@ type FragmentKey = String;
 #[derive(Clone, Debug)]
 struct Stitch<'a> {
     stitched_arcs: HashSet<usize>,
-    fragment_by_start: BTreeMap<FragmentKey, Fragment>,
-    fragment_by_end: BTreeMap<FragmentKey, Fragment>,
+    fragment_by_start: BTreeMap<FragmentKey, Rc<RefCell<Fragment>>>,
+    fragment_by_end: BTreeMap<FragmentKey, Rc<RefCell<Fragment>>>,
     fragments: Vec<Fragment>,
     topology: &'a Topology,
 }
@@ -208,18 +217,18 @@ impl<'a> Stitch<'a> {
     /// building stitched_by_arcs and fragments.
     fn flush(
         &mut self,
-        fragment_by_end: &mut BTreeMap<FragmentKey, Fragment>,
-        fragment_by_start: &mut BTreeMap<FragmentKey, Fragment>,
+        fragment_by_end: &mut BTreeMap<FragmentKey, Rc<RefCell<Fragment>>>,
+        fragment_by_start: &mut BTreeMap<FragmentKey, Rc<RefCell<Fragment>>>,
     ) {
         for (k, f) in fragment_by_end.iter() {
             fragment_by_start.remove(k);
-            let mut f = f.clone();
+            let mut f = f.borrow_mut();
             f.start = None;
             f.end = None;
             for i in f.items.iter() {
                 self.stitched_arcs.insert(translate(*i));
             }
-            self.fragments.push(f)
+            self.fragments.push(f.clone())
         }
     }
 }
