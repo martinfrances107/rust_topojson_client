@@ -17,8 +17,9 @@ mod world_test {
     /// can be extracted from the "land" object within the map.
     #[test]
     pub fn object_decode() {
-        let file =
-            File::open("./tests/world-atlas/world/50m.json").expect("File should open read only.");
+        let path = "./tests/world-atlas/world/50m.json";
+        let file = File::open("./tests/world-atlas/world/50m.json")
+            .expect(&format!("File: {} should be readable.", path));
         let topology: Topology =
             serde_json::from_reader(file).expect("File should be parse as JSON.");
 
