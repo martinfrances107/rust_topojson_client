@@ -42,80 +42,110 @@ pub(super) fn stitch(topology: &Topology, mut arcs: ArcIndexes) -> Vec<ArcIndexe
         let end = gen_key(e.get(1).unwrap());
 
         if let Some(f) = stitch.fragment_by_end.clone().get(&start) {
-            let key = f.clone().borrow_mut().end.as_ref().unwrap().clone();
+            let key = f
+                .clone()
+                .fragment
+                .borrow_mut()
+                .end
+                .as_ref()
+                .unwrap()
+                .clone();
             stitch.fragment_by_end.remove(&key);
-            f.borrow_mut().items.push_back(*i);
-            f.borrow_mut().end = Some(end);
+            f.fragment.borrow_mut().items.push_back(*i);
+            f.fragment.borrow_mut().end = Some(end);
 
             if let Some(g) = stitch.fragment_by_start.get(&end) {
                 let g = g.clone();
                 stitch
                     .fragment_by_start
-                    .remove(&(g).borrow_mut().start.as_ref().unwrap().clone());
+                    .remove(&(g).fragment.borrow_mut().start.as_ref().unwrap().clone());
 
-                let fg = if g == *f {
+                let mut fg = if g == *f {
                     f.clone()
                 } else {
-                    Rc::new(RefCell::new(Fragment {
-                        items: f
-                            .borrow_mut()
-                            .items
-                            .iter()
-                            .chain(g.borrow_mut().items.iter())
-                            .copied()
-                            .collect(),
-                        start: f.borrow_mut().start,
-                        end: Some((g).borrow_mut().end.as_ref().unwrap().clone()),
-                    }))
+                    let g_items = g.fragment.borrow().items.clone();
+                    let items = f
+                        .fragment
+                        .borrow_mut()
+                        .items
+                        .iter()
+                        .chain(g_items.iter())
+                        .copied()
+                        .collect();
+                    let g_end = Some((g).fragment.borrow().end).unwrap().unwrap();
+                    FragmentLinked {
+                        fragment: Rc::new(RefCell::new(Fragment {
+                            items,
+                            start: f.fragment.borrow_mut().start,
+                            end: Some(g_end),
+                        })),
+                        cross_link: start,
+                    }
                 };
-                let key = f.clone().borrow_mut().end.as_ref().unwrap().clone();
+                let key = f
+                    .clone()
+                    .fragment
+                    .borrow_mut()
+                    .end
+                    .as_ref()
+                    .unwrap()
+                    .clone();
                 stitch.fragment_by_start.insert(key, fg.clone());
-                let key = fg.borrow_mut().end.clone().unwrap();
+                let key = fg.fragment.borrow_mut().end.clone().unwrap();
+                fg.cross_link = end;
                 stitch.fragment_by_end.insert(key, fg);
             } else {
                 stitch
                     .fragment_by_start
-                    .insert(f.borrow_mut().start.unwrap(), f.clone());
+                    .insert(f.fragment.borrow_mut().start.unwrap(), f.clone());
                 stitch
                     .fragment_by_end
-                    .insert(f.borrow_mut().end.unwrap(), f.clone());
+                    .insert(f.fragment.borrow_mut().end.unwrap(), f.clone());
             }
         } else if let Some(f) = stitch.fragment_by_start.get(&end) {
-            let f = f.clone();
-            let key = f.borrow_mut().start.as_ref().unwrap().clone();
+            let mut f = f.clone();
+            let key = f.fragment.borrow_mut().start.as_ref().unwrap().clone();
             stitch.fragment_by_start.remove(&key);
-            f.borrow_mut().items.push_front(*i);
-            f.borrow_mut().start = Some(start);
+            f.fragment.borrow_mut().items.push_front(*i);
+            f.fragment.borrow_mut().start = Some(start);
 
             if let Some(g) = stitch.fragment_by_end.get(&start) {
                 let g = g.clone();
                 stitch
                     .fragment_by_end
-                    .remove(g.borrow().end.as_ref().unwrap());
-                let gf = if g == f {
+                    .remove(g.fragment.borrow().end.as_ref().unwrap());
+
+                let mut gf = if g == f {
                     f
                 } else {
                     let g_then_f = g
+                        .fragment
                         .borrow()
                         .items
                         .clone()
                         .into_iter()
-                        .chain(f.borrow_mut().items.clone().into_iter());
-                    Rc::new(RefCell::new(Fragment {
-                        items: VecDeque::from_iter(g_then_f),
-                        start: g.borrow().start,
-                        end: f.borrow_mut().end,
-                    }))
+                        .chain(f.fragment.borrow_mut().items.clone().into_iter());
+                    FragmentLinked {
+                        fragment: Rc::new(RefCell::new(Fragment {
+                            items: VecDeque::from_iter(g_then_f),
+                            start: g.fragment.borrow().start,
+                            end: f.fragment.borrow_mut().end,
+                        })),
+                        cross_link: start,
+                    }
                 };
 
-                let key = gf.borrow().start.unwrap();
+                let key = gf.fragment.borrow().start.unwrap();
                 stitch.fragment_by_start.insert(key, gf.clone());
-                let key = gf.borrow().end.unwrap();
+                let key = gf.fragment.borrow().end.unwrap();
+                gf.cross_link = end;
                 stitch.fragment_by_end.insert(key, gf);
             } else {
-                let key = f.borrow_mut().start.unwrap();
+                let key = f.fragment.borrow_mut().start.unwrap();
+                f.cross_link = end;
                 stitch.fragment_by_start.insert(key, f.clone());
-                let key = f.borrow_mut().end.unwrap();
+                let key = f.fragment.borrow_mut().end.unwrap();
+                f.cross_link = start;
                 stitch.fragment_by_end.insert(key, f);
             }
         } else {
@@ -124,13 +154,21 @@ pub(super) fn stitch(topology: &Topology, mut arcs: ArcIndexes) -> Vec<ArcIndexe
                 start: Some(start),
                 end: Some(end),
             }));
-            stitch.fragment_by_start.insert(start, f.clone());
-            stitch.fragment_by_end.insert(end, f);
+            let f_linked1 = FragmentLinked {
+                fragment: f.clone(),
+                cross_link: end,
+            };
+            stitch.fragment_by_start.insert(start, f_linked1);
+            let f_linked2 = FragmentLinked {
+                fragment: f,
+                cross_link: start,
+            };
+            stitch.fragment_by_end.insert(end, f_linked2);
         }
     });
 
-    dbg!(stitch.fragment_by_start.clone());
-    dbg!(stitch.fragment_by_end.clone());
+    // dbg!(stitch.fragment_by_start.clone());
+    // dbg!(stitch.fragment_by_end.clone());
 
     stitch.flush(
         &mut stitch.fragment_by_end.clone(),
@@ -157,7 +195,7 @@ pub(super) fn stitch(topology: &Topology, mut arcs: ArcIndexes) -> Vec<ArcIndexe
         }
     });
 
-    dbg!(&fragments_plain);
+    // dbg!(&fragments_plain);
     fragments_plain
 }
 
@@ -174,13 +212,29 @@ struct Fragment {
     end: Option<FragmentKey>,
 }
 
+/// Javascript allow shared pointers to become separated from the
+/// underlying memory. Rust pointer must be valid at all times.
+///
+/// Regarding fragment_by_start and fragment_by_end.
+///
+/// When an index in fragment_by_start is deleted the corrsponding
+/// index in fragment_by_end becomes undefined/empty.
+///
+/// To simulate this in Rust we need to cross_link the two together.
+/// and when one is deleted the twin in the other list must also be deleted.
+#[derive(Clone, Debug, PartialEq)]
+struct FragmentLinked {
+    pub cross_link: FragmentKey,
+    fragment: Rc<RefCell<Fragment>>,
+}
+
 type FragmentKey = (i32, i32);
 
 #[derive(Clone, Debug)]
 struct Stitch<'a> {
     stitched_arcs: HashSet<usize>,
-    fragment_by_start: BTreeMap<FragmentKey, Rc<RefCell<Fragment>>>,
-    fragment_by_end: BTreeMap<FragmentKey, Rc<RefCell<Fragment>>>,
+    fragment_by_start: BTreeMap<FragmentKey, FragmentLinked>,
+    fragment_by_end: BTreeMap<FragmentKey, FragmentLinked>,
     fragments: Vec<Fragment>,
     topology: &'a Topology,
 }
@@ -213,12 +267,18 @@ impl<'a> Stitch<'a> {
     /// building stitched_by_arcs and fragments.
     fn flush(
         &mut self,
-        fragment_by_end: &mut BTreeMap<FragmentKey, Rc<RefCell<Fragment>>>,
-        fragment_by_start: &mut BTreeMap<FragmentKey, Rc<RefCell<Fragment>>>,
+        fragment_by_end: &mut BTreeMap<FragmentKey, FragmentLinked>,
+        fragment_by_start: &mut BTreeMap<FragmentKey, FragmentLinked>,
     ) {
-        for (k, f) in fragment_by_end.iter() {
-            fragment_by_start.remove(k);
-            let mut f = f.borrow_mut();
+        let search_iterator = fragment_by_end.keys().copied().collect::<Vec<(i32, i32)>>();
+        for k in search_iterator {
+            let f = fragment_by_end.get(&k).unwrap().clone();
+            let cross_link = f.cross_link;
+
+            fragment_by_start.remove(&k);
+            fragment_by_end.remove(&cross_link.clone());
+
+            let mut f = f.fragment.borrow_mut();
             f.start = None;
             f.end = None;
             for i in f.items.iter() {
@@ -226,7 +286,7 @@ impl<'a> Stitch<'a> {
             }
             self.fragments.push(f.clone())
         }
-        dbg!("exit flush ");
-        dbg!(&self.fragments);
+        // dbg!("exit flush ");
+        // dbg!(&self.fragments);
     }
 }
