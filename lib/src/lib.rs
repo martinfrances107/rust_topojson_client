@@ -1,4 +1,3 @@
-#![allow(clippy::pedantic)]
 #![warn(missing_docs)]
 #![warn(missing_debug_implementations)]
 #![allow(clippy::many_single_char_names)]
@@ -27,6 +26,7 @@ pub mod feature;
 pub mod neighbors;
 
 mod merge;
+mod polygon_u;
 /// function reverse() and unit tests.
 mod reverse;
 mod stitch;
@@ -53,7 +53,7 @@ fn translate(arc: i32) -> usize {
 #[cfg(test)]
 mod translate_tests {
 
-    use super::translate;
+    use crate::translate;
     use pretty_assertions::assert_eq;
 
     #[test]

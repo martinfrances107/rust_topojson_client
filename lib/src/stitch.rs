@@ -24,8 +24,8 @@ pub(super) fn stitch(topology: &Topology, mut arcs: ArcIndexes) -> Vec<ArcIndexe
     let mut empty_index = Wrapping(usize::MAX);
 
     // Stitch empty arcs first, since they may be subsumed by other arcs.
-    // Cannot use conventional iterator here as we are swapping
-    // element as we loop.
+    // Cannot use conventional iterator here as we are swapping element as
+    // we loop.
     for j in 0..arcs.len() {
         let i = arcs[j];
         let arc = &topology.arcs[translate(i)];
@@ -60,7 +60,8 @@ pub(super) fn stitch(topology: &Topology, mut arcs: ArcIndexes) -> Vec<ArcIndexe
                     .fragment_by_start
                     .remove(&(g).fragment.borrow_mut().start.as_ref().unwrap().clone());
 
-                let mut fg = if g == *f {
+                // The cross links may differ, but the core may not.
+                let mut fg = if g.fragment == f.fragment {
                     f.clone()
                 } else {
                     let g_items = g.fragment.borrow().items.clone();
@@ -167,22 +168,13 @@ pub(super) fn stitch(topology: &Topology, mut arcs: ArcIndexes) -> Vec<ArcIndexe
         }
     });
 
-    // dbg!(stitch.fragment_by_start.clone());
-    // dbg!(stitch.fragment_by_end.clone());
-
-    stitch.flush(
-        &mut stitch.fragment_by_end.clone(),
-        &mut stitch.fragment_by_start.clone(),
-    );
-    stitch.flush(
-        &mut stitch.fragment_by_start.clone(),
-        &mut stitch.fragment_by_end.clone(),
-    );
+    stitch.flush(FlushDir::EndToStart);
+    stitch.flush(FlushDir::StartToEnd);
 
     // Conversion of Vec<Fragment> to Vec<ArcIndexes>
     //
-    // Compared with JS there is an extra loop here
-    // which has time and memory implications.
+    // Compared with JS there is an extra loop here which has time and
+    // memory implications.
     let mut fragments_plain: Vec<ArcIndexes> = stitch
         .fragments
         .iter()
@@ -195,7 +187,6 @@ pub(super) fn stitch(topology: &Topology, mut arcs: ArcIndexes) -> Vec<ArcIndexe
         }
     });
 
-    // dbg!(&fragments_plain);
     fragments_plain
 }
 
@@ -217,11 +208,11 @@ struct Fragment {
 ///
 /// Regarding fragment_by_start and fragment_by_end.
 ///
-/// When an index in fragment_by_start is deleted the corrsponding
-/// index in fragment_by_end becomes undefined/empty.
+/// When an index in fragment_by_start is deleted the corrsponding index in
+/// fragment_by_end becomes undefined/empty.
 ///
 /// To simulate this in Rust we need to cross_link the two together.
-/// and when one is deleted the twin in the other list must also be deleted.
+/// When one is deleted the twin in the other list must also be deleted.
 #[derive(Clone, Debug, PartialEq)]
 struct FragmentLinked {
     pub cross_link: FragmentKey,
@@ -237,6 +228,11 @@ struct Stitch<'a> {
     fragment_by_end: BTreeMap<FragmentKey, FragmentLinked>,
     fragments: Vec<Fragment>,
     topology: &'a Topology,
+}
+
+enum FlushDir {
+    EndToStart,
+    StartToEnd,
 }
 
 impl<'a> Stitch<'a> {
@@ -265,28 +261,28 @@ impl<'a> Stitch<'a> {
     /// Iterate over fragment_by_end :-
     /// deleting elements in fragment_by_start
     /// building stitched_by_arcs and fragments.
-    fn flush(
-        &mut self,
-        fragment_by_end: &mut BTreeMap<FragmentKey, FragmentLinked>,
-        fragment_by_start: &mut BTreeMap<FragmentKey, FragmentLinked>,
-    ) {
+    fn flush(&mut self, direction: FlushDir) {
+        let (fragment_by_end, fragment_by_start) = match direction {
+            FlushDir::EndToStart => (&mut self.fragment_by_start, &mut self.fragment_by_end),
+            FlushDir::StartToEnd => (&mut self.fragment_by_end, &mut self.fragment_by_start),
+        };
+
         let search_iterator = fragment_by_end.keys().copied().collect::<Vec<(i32, i32)>>();
         for k in search_iterator {
             let f = fragment_by_end.get(&k).unwrap().clone();
             let cross_link = f.cross_link;
 
             fragment_by_start.remove(&k);
-            fragment_by_end.remove(&cross_link.clone());
+            // fragment_by_end.remove(&cross_link);
 
             let mut f = f.fragment.borrow_mut();
             f.start = None;
             f.end = None;
+
             for i in f.items.iter() {
                 self.stitched_arcs.insert(translate(*i));
             }
             self.fragments.push(f.clone())
         }
-        // dbg!("exit flush ");
-        // dbg!(&self.fragments);
     }
 }

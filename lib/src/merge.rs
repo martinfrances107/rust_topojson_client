@@ -5,6 +5,7 @@ use geo::{CoordFloat, Coordinate, Geometry};
 use topojson::{ArcIndexes, Topology, Value};
 
 use crate::feature::Builder as FeatureBuilder;
+use crate::polygon_u::PolygonU;
 use crate::stitch::stitch;
 use crate::translate;
 
@@ -23,40 +24,14 @@ where
     area.abs() // Note: doubled area!
 }
 
-/// A polygon which can be marked with a underscore
-/// to imply it has been processed.
-///
-/// In javascript object are dynamic in rust we need
-/// this wrapper( or an enum )
-#[derive(Clone, Debug)]
-struct PolygonU {
-    v: Vec<ArcIndexes>,
-    underscore: bool,
-}
-
-impl PolygonU {
-    fn new(v: Vec<ArcIndexes>) -> Self {
-        Self {
-            v,
-            underscore: false,
-        }
-    }
-
-    #[inline]
-    fn is_not_marked(&self) -> bool {
-        !self.underscore
-    }
-}
-
 /// todo
 #[derive(Clone, Debug)]
 pub struct MergeArcs {
     polygons: Vec<Rc<RefCell<PolygonU>>>,
 
-    // Rc<RefCell<_>>
-    // A Shared refeerence is needed here becuase changes to the contents
-    // of the 'polygon' refcell should be observed in multiple rows of the
-    // polygons_by_arc table.
+    // Rc<RefCell<_>> A Shared refeerence is needed here becuase changes to
+    // the contents of the 'polygon' refcell should be observed in multiple
+    // rows of the polygons_by_arc table.
     polygons_by_arc: Vec<Vec<Rc<RefCell<PolygonU>>>>,
 
     groups: Vec<Vec<PolygonU>>,
@@ -119,7 +94,7 @@ impl MergeArcs {
             if polygon.borrow().is_not_marked() {
                 let mut group: Vec<PolygonU> = vec![];
 
-                polygon.borrow_mut().underscore = true;
+                polygon.borrow_mut().mark();
 
                 let mut neighbors = vec![polygon];
 
@@ -131,7 +106,7 @@ impl MergeArcs {
                             let index = translate(*arc);
                             self.polygons_by_arc[index].iter().for_each(|polygon| {
                                 if polygon.borrow().is_not_marked() {
-                                    polygon.borrow_mut().underscore = true;
+                                    polygon.borrow_mut().mark();
                                     neighbors.push(polygon);
                                 }
                             });
@@ -144,7 +119,7 @@ impl MergeArcs {
 
         self.polygons
             .iter_mut()
-            .for_each(|polygon| polygon.borrow_mut().underscore = false);
+            .for_each(|polygon| polygon.borrow_mut().unmark());
 
         // Extract the exterior (unique) arcs.
         let polygon_arcs = self
@@ -167,9 +142,9 @@ impl MergeArcs {
                 // Stich the arc into one or more rings.
                 let mut arcs = stitch(&self.topology, arcs);
 
-                // If more than one ring is returned,
-                // at most one of these rings can be the exterior;
-                // choose the one with the greatest absolute area.
+                // If more than one ring is returned, at most one of these
+                // rings can be the exterior; choose the one with the
+                // greatest absolute area.
                 if !arcs.is_empty() {
                     let mut iter_mut = arcs.iter_mut();
                     let mut k = self.area(iter_mut.next().unwrap().to_vec());
@@ -212,10 +187,9 @@ mod merge_tests {
     use pretty_assertions::assert_eq;
     use topojson::NamedGeometry;
     use topojson::Topology;
-    use topojson::TransformParams;
     use topojson::Value;
 
-    use super::MergeArcs;
+    use crate::merge::MergeArcs;
 
     // tape("merge ignores null geometries", function(test) {
     //     var topology = {
