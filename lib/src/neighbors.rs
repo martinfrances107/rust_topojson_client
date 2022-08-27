@@ -1,13 +1,12 @@
-use std::collections::BTreeMap;
 use std::cell::RefCell;
+use std::collections::BTreeMap;
 
 use bisect::bisect;
 use topojson::{ArcIndexes, NamedGeometry, Value};
 
 /// Foreach geometry item produce a list of neigbors.
 pub fn neighbors(objects: &mut [NamedGeometry]) -> Vec<ArcIndexes> {
-    let indexes_by_arc: RefCell<BTreeMap<usize, ArcIndexes>> =
-        RefCell::new(BTreeMap::new());
+    let indexes_by_arc: RefCell<BTreeMap<usize, ArcIndexes>> = RefCell::new(BTreeMap::new());
     let mut neighbors: Vec<Vec<i32>> = objects.iter().map(|_| vec![]).collect();
 
     let line = |arcs: &mut ArcIndexes, i: i32| {
@@ -364,57 +363,54 @@ mod neighbors_tests {
     // // J-----------K-----------L
     // //
     #[test]
-    fn the_polygons_abedghkja_and_bclkhifeb_are_neighbors_and_not_listed_twice(){
-
-    println!("neighbors the polygons ABEDGHKJA and BCLKHIFEB are neighbors, and not listed twice");
-    let mut topology = Topology {
-        objects: vec![
-            NamedGeometry {
-                name: "abdeghkja".to_string(),
-                geometry: Geometry::new(Value::LineString(vec![0, 1, 2, 3])),
-            },
-            NamedGeometry {
-                name: "bclkhifeb".to_string(),
-                geometry: Geometry::new(Value::LineString(vec![4, -3, 5, -1])),
-            },
-        ],
-        arcs: vec![
-            vec![vec![2_f64, 0_f64], vec![2_f64, 1_f64]],
-            vec![
-                vec![2_f64, 2_f64],
-                vec![1_f64, 1_f64],
-                vec![1_f64, 2_f64],
-                vec![2_f64, 2_f64],
+    fn the_polygons_abedghkja_and_bclkhifeb_are_neighbors_and_not_listed_twice() {
+        println!(
+            "neighbors the polygons ABEDGHKJA and BCLKHIFEB are neighbors, and not listed twice"
+        );
+        let mut topology = Topology {
+            objects: vec![
+                NamedGeometry {
+                    name: "abdeghkja".to_string(),
+                    geometry: Geometry::new(Value::LineString(vec![0, 1, 2, 3])),
+                },
+                NamedGeometry {
+                    name: "bclkhifeb".to_string(),
+                    geometry: Geometry::new(Value::LineString(vec![4, -3, 5, -1])),
+                },
             ],
-            vec![
-                vec![2_f64, 2_f64],
-                vec![2_f64, 3_f64],
-
+            arcs: vec![
+                vec![vec![2_f64, 0_f64], vec![2_f64, 1_f64]],
+                vec![
+                    vec![2_f64, 2_f64],
+                    vec![1_f64, 1_f64],
+                    vec![1_f64, 2_f64],
+                    vec![2_f64, 2_f64],
+                ],
+                vec![vec![2_f64, 2_f64], vec![2_f64, 3_f64]],
+                vec![
+                    vec![2_f64, 3_f64],
+                    vec![0_f64, 3_f64],
+                    vec![0_f64, 0_f64],
+                    vec![2_f64, 0_f64],
+                ],
+                vec![
+                    vec![2_f64, 0_f64],
+                    vec![4_f64, 0_f64],
+                    vec![4_f64, 3_f64],
+                    vec![2_f64, 3_f64],
+                ],
+                vec![
+                    vec![2_f64, 2_f64],
+                    vec![3_f64, 2_f64],
+                    vec![3_f64, 1_f64],
+                    vec![2_f64, 1_f64],
+                ],
             ],
-            vec![
-                vec![2_f64, 3_f64],
-                vec![0_f64, 3_f64],
-                vec![0_f64, 0_f64],
-                vec![2_f64, 0_f64],
-            ],
-            vec![
-                vec![2_f64, 0_f64],
-                vec![4_f64, 0_f64],
-                vec![4_f64, 3_f64],
-                vec![2_f64, 3_f64],
-            ],
-            vec![
-                vec![2_f64, 2_f64],
-                vec![3_f64, 2_f64],
-                vec![3_f64, 1_f64],
-                vec![2_f64, 1_f64],
-            ],
-        ],
-        bbox: None,
-        transform: None,
-        foreign_members: None,
-    };
-    let expected: Vec<ArcIndexes> = vec![vec![1], vec![0]];
-    assert_eq!(neighbors(&mut topology.objects), expected);
+            bbox: None,
+            transform: None,
+            foreign_members: None,
+        };
+        let expected: Vec<ArcIndexes> = vec![vec![1], vec![0]];
+        assert_eq!(neighbors(&mut topology.objects), expected);
     }
 }
