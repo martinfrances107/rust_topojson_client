@@ -15,16 +15,16 @@ The feature extraction section of this library has been ported as is being used 
 
 ## TEST STATUS
 
-  | Tests             | Status             |
-  | --                | ---                |
-  | feature-test      | tests complete     |
-  | neigbor-test      | complete           |
-  | merge-test        | tests incomplete   |
-  | stich-test        | Module needs work  |
-  | topo2geo-test     | Missing            |
-  | topoquantize-test | Missing            |
-  | transform-test    | complete           |
-  | untransform-test  | Module is missing  |
+  | Tests             | Status            |
+  | ----------------- | ----------------- |
+  | feature-test      | tests complete    |
+  | neigbor-test      | complete          |
+  | merge-test        | tests incomplete  |
+  | stich-test        | Module needs work |
+  | topo2geo-test     | Missing           |
+  | topoquantize-test | Missing           |
+  | transform-test    | complete          |
+  | untransform-test  | Module is missing |
 
 ## New integration tests
 
