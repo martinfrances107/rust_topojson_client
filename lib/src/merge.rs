@@ -1,4 +1,5 @@
 use std::cell::RefCell;
+use std::collections::{BTreeMap, HashMap};
 use std::fmt::Debug;
 use std::rc::Rc;
 
@@ -33,7 +34,7 @@ pub struct MergeArcs {
     // Rc<RefCell<_>> A Shared refeerence is needed here becuase changes to
     // the contents of the 'polygon' refcell should be observed in multiple
     // rows of the polygons_by_arc table.
-    polygons_by_arc: Vec<Vec<Rc<RefCell<PolygonU>>>>,
+    polygons_by_arc: BTreeMap<usize, Vec<Rc<RefCell<PolygonU>>>>,
 
     groups: Vec<Vec<PolygonU>>,
     topology: Topology,
@@ -42,7 +43,7 @@ pub struct MergeArcs {
 impl MergeArcs {
     pub fn new(topology: Topology) -> Self {
         Self {
-            polygons_by_arc: vec![],
+            polygons_by_arc: BTreeMap::new(),
             polygons: vec![],
             groups: vec![],
             topology,
@@ -75,8 +76,8 @@ impl MergeArcs {
         polygon.iter().for_each(|ring| {
             ring.iter().for_each(|arc| {
                 let index = translate(*arc);
-                match self.polygons_by_arc.get(index) {
-                    Some(_) => self.polygons_by_arc[index].push(pu.clone()),
+                match self.polygons_by_arc.get_mut(&index) {
+                    Some(p) => p.push(pu.clone()),
                     None => {
                         self.polygons_by_arc.insert(index, vec![pu.clone()]);
                     }
@@ -113,7 +114,7 @@ impl MergeArcs {
                     polygon.borrow().v.iter().for_each(|ring| {
                         ring.iter().for_each(|arc| {
                             let index = translate(*arc);
-                            self.polygons_by_arc[index].iter().for_each(|polygon| {
+                            self.polygons_by_arc[&index].iter().for_each(|polygon| {
                                 if polygon.borrow().is_not_marked() {
                                     polygon.borrow_mut().mark();
                                     neighbors.push(polygon);
@@ -141,7 +142,7 @@ impl MergeArcs {
                     polygon.v.iter().for_each(|ring| {
                         ring.iter().for_each(|arc| {
                             let index = translate(*arc);
-                            if self.polygons_by_arc[index].len() < 2 {
+                            if self.polygons_by_arc[&index].len() < 2 {
                                 arcs.push(*arc);
                             }
                         });
@@ -213,38 +214,6 @@ mod merge_tests {
     //     test.deepEqual(topojson.merge(topology, [{type: null}]), {
     //       type: "MultiPolygon",
     //       coordinates: []
-    //     });
-    //     test.end();
-    //   });
-
-    //
-    // +----+----+            +----+----+
-    // |    |    |            |         |
-    // |    |    |    ==>     |         |
-    // |    |    |            |         |
-    // +----+----+            +----+----+
-    //
-    //   tape("merge stitches together two side-by-side polygons", function(test) {
-    //     var topology = {
-    //       "type": "Topology",
-    //       "objects": {
-    //         "collection": {
-    //           "type": "GeometryCollection",
-    //           "geometries": [
-    //             {"type": "Polygon", "arcs": [[0, 1]]},
-    //             {"type": "Polygon", "arcs": [[-1, 2]]}
-    //           ]
-    //         }
-    //       },
-    //       "arcs": [
-    //         [[1, 1], [1, 0]],
-    //         [[1, 0], [0, 0], [0, 1], [1, 1]],
-    //         [[1, 1], [2, 1], [2, 0], [1, 0]]
-    //       ]
-    //     };
-    //     test.deepEqual(topojson.merge(topology, topology.objects.collection.geometries), {
-    //       type: "MultiPolygon",
-    //       coordinates: [[[[1, 0], [0, 0], [0, 1], [1, 1], [2, 1], [2, 0], [1, 0]]]]
     //     });
     //     test.end();
     //   });
@@ -470,6 +439,87 @@ mod merge_tests {
     //     });
     //     test.end();
     //   });
+
+    // //
+    // // +-----------+-----------+            +-----------+-----------+
+    // // |           |           |            |                       |
+    // // |   +---+   |   +---+   |    ==>     |   +---+       +---+   |
+    // // |   |   |   |   |   |   |            |   |   |       |   |   |
+    // // |   +---+   |   +---+   |            |   +---+       +---+   |
+    // // |           |           |            |                       |
+    // // +-----------+-----------+            +-----------+-----------+
+    // //
+    // #[test]
+    // fn stitches_together_two_side_by_side_polygons_with_holes() {
+    //     let mut values = vec![
+    //         Value::Polygon(vec![vec![0, 1], vec![2]]),
+    //         Value::Polygon(vec![vec![-1, 2], vec![4]]),
+    //     ];
+
+    //     let polys = vec![
+    //         topojson::Geometry::new(Value::Polygon(vec![vec![0, 1], vec![2]])),
+    //         topojson::Geometry::new(Value::Polygon(vec![vec![-1, 2], vec![4]])),
+    //     ];
+    //     let object = Value::GeometryCollection(polys);
+
+    //     let topology = Topology {
+    //         arcs: vec![
+    //             vec![vec![3_f64, 3_f64], vec![3_f64, 0_f64]],
+    //             vec![
+    //                 vec![3_f64, 0_f64],
+    //                 vec![0_f64, 0_f64],
+    //                 vec![0_f64, 3_f64],
+    //                 vec![3_f64, 3_f64],
+    //             ],
+    //             vec![
+    //                 vec![1_f64, 1_f64],
+    //                 vec![2_f64, 1_f64],
+    //                 vec![2_f64, 2_f64],
+    //                 vec![1_f64, 2_f64],
+    //                 vec![1_f64, 1_f64],
+    //             ],
+    //             vec![
+    //                 vec![3_f64, 3_f64],
+    //                 vec![6_f64, 3_f64],
+    //                 vec![6_f64, 0_f64],
+    //                 vec![3_f64, 0_f64],
+    //             ],
+    //             vec![
+    //                 vec![4_f64, 1_f64],
+    //                 vec![5_f64, 1_f64],
+    //                 vec![5_f64, 2_f64],
+    //                 vec![4_f64, 2_f64],
+    //                 vec![4_f64, 1_f64],
+    //             ],
+    //         ],
+    //         objects: vec![NamedGeometry {
+    //             name: "foo".to_string(),
+    //             geometry: topojson::Geometry::new(object),
+    //         }],
+    //         bbox: None,
+    //         transform: None,
+    //         foreign_members: None,
+    //     };
+
+    //     let p1 = Polygon::new(
+    //         LineString::from(vec![
+    //             (3.0_f64, 0.0_f64),
+    //             (0.0_f64, 0.0_f64),
+    //             (0.0_f64, 3.0_f64),
+    //             (3.0_f64, 3.0_f64),
+    //             (6.0_f64, 3.0_f64),
+    //             (6.0_f64, 6.0_f64),
+    //             (3.0_f64, 0.0_f64),
+    //         ]),
+    //         vec![
+    //             LineString::from(vec![(1., 1.), (2., 1.), (2., 2.), (1., 2.), (1., 1.)]),
+    //             LineString::from(vec![(4., 1.), (5., 1.), (5., 2.), (4., 2.), (4., 1.)]),
+    //         ],
+    //     );
+    //     let mp = Geometry::MultiPolygon(MultiPolygon::new(vec![p1]));
+
+    //     assert_eq!(MergeArcs::new(topology).merge(&mut values), mp);
+    // }
 
     //   //
     //   // +-------+-------+            +-------+-------+
