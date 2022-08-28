@@ -182,7 +182,7 @@ pub(super) fn stitch(topology: &Topology, mut arcs: ArcIndexes) -> Vec<ArcIndexe
         .collect();
 
     arcs.iter().for_each(|i| {
-        if stitch.stitched_arcs.contains(&translate(*i)) {
+        if !stitch.stitched_arcs.contains(&translate(*i)) {
             fragments_plain.push(vec![*i]);
         }
     });
@@ -263,8 +263,8 @@ impl<'a> Stitch<'a> {
     /// building stitched_by_arcs and fragments.
     fn flush(&mut self, direction: FlushDir) {
         let (fragment_by_end, fragment_by_start) = match direction {
-            FlushDir::EndToStart => (&mut self.fragment_by_start, &mut self.fragment_by_end),
-            FlushDir::StartToEnd => (&mut self.fragment_by_end, &mut self.fragment_by_start),
+            FlushDir::StartToEnd => (&mut self.fragment_by_start, &mut self.fragment_by_end),
+            FlushDir::EndToStart => (&mut self.fragment_by_end, &mut self.fragment_by_start),
         };
 
         let search_iterator = fragment_by_end.keys().copied().collect::<Vec<(i32, i32)>>();
