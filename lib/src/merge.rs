@@ -1,4 +1,5 @@
 use std::cell::RefCell;
+use std::fmt::Debug;
 use std::rc::Rc;
 
 use geo::{CoordFloat, Coordinate, Geometry};
@@ -86,7 +87,15 @@ impl MergeArcs {
         self.polygons.push(pu);
     }
 
-    /// Generate a Polygons using MergeArcs.
+    fn merge<T>(&mut self, objects: &mut [Value]) -> Geometry<T>
+    where
+        T: CoordFloat + Debug,
+    {
+        let ma = self.generate(objects);
+        FeatureBuilder::generate(&self.topology, &ma)
+    }
+
+    /// Merge selected objects.
     pub fn generate(&mut self, objects: &mut [Value]) -> Value {
         objects.iter().for_each(|o| self.geometry(o));
 
@@ -145,7 +154,8 @@ impl MergeArcs {
                 // If more than one ring is returned, at most one of these
                 // rings can be the exterior; choose the one with the
                 // greatest absolute area.
-                if !arcs.is_empty() {
+                let n = arcs.len();
+                if n > 1 {
                     let mut iter_mut = arcs.iter_mut();
                     let mut k = self.area(iter_mut.next().unwrap().to_vec());
                     let mut ki;
@@ -165,7 +175,6 @@ impl MergeArcs {
             })
             .filter(|arcs| !(*arcs).is_empty())
             .collect();
-
         Value::MultiPolygon(polygon_arcs)
     }
 
@@ -184,6 +193,10 @@ impl MergeArcs {
 #[cfg(not(tarpaulin_include))]
 #[cfg(test)]
 mod merge_tests {
+    use geo::Geometry;
+    use geo::LineString;
+    use geo::MultiPolygon;
+    use geo::Polygon;
     use pretty_assertions::assert_eq;
     use topojson::NamedGeometry;
     use topojson::Topology;
@@ -243,54 +256,56 @@ mod merge_tests {
     // |    |    |            |         |
     // +----+----+            +----+----+
     //
-    // #[test]
-    // fn stitches_together_two_side_by_side_polygons() {
-    //     println!("merge stitches together two side-by-side polygons");
-    //     let mut values = vec![
-    //         Value::Polygon(vec![vec![0, 1]]),
-    //         Value::Polygon(vec![vec![-1, 2]]),
-    //     ];
-    //     let polys = vec![
-    //         topojson::Geometry::new(Value::Polygon(vec![vec![0, 1]])),
-    //         topojson::Geometry::new(Value::Polygon(vec![vec![-1, 2]])),
-    //     ];
-    //     let object = Value::GeometryCollection(polys);
-    //     let topology = Topology {
-    //         arcs: vec![
-    //             vec![vec![1_f64, 1_f64], vec![1_f64, 0_f64]],
-    //             vec![
-    //                 vec![1_f64, 0_f64],
-    //                 vec![0_f64, 0_f64],
-    //                 vec![0_f64, 1_f64],
-    //                 vec![1_f64, 1_f64],
-    //             ],
-    //             vec![
-    //                 vec![1_f64, 1_f64],
-    //                 vec![2_f64, 1_f64],
-    //                 vec![2_f64, 0_f64],
-    //                 vec![1_f64, 0_f64],
-    //             ],
-    //         ],
-    //         objects: vec![NamedGeometry {
-    //             name: "foo".to_string(),
-    //             geometry: topojson::Geometry::new(object),
-    //         }],
-    //         bbox: None,
-    //         transform: None,
-    //         foreign_members: None,
-    //     };
-    //     let mp = Value::MultiPolygon(vec![vec![
-    //         vec![1, 0],
-    //         vec![0, 0],
-    //         vec![0, 1],
-    //         vec![1, 1],
-    //         vec![2, 1],
-    //         vec![2, 0],
-    //         vec![1, 0],
-    //     ]]);
+    #[test]
+    fn stitches_together_two_side_by_side_polygons() {
+        println!("merge stitches together two side-by-side polygons");
+        let mut values = vec![
+            Value::Polygon(vec![vec![0, 1]]),
+            Value::Polygon(vec![vec![-1, 2]]),
+        ];
+        let polys = vec![
+            topojson::Geometry::new(Value::Polygon(vec![vec![0, 1]])),
+            topojson::Geometry::new(Value::Polygon(vec![vec![-1, 2]])),
+        ];
+        let object = Value::GeometryCollection(polys);
+        let topology = Topology {
+            arcs: vec![
+                vec![vec![1_f64, 1_f64], vec![1_f64, 0_f64]],
+                vec![
+                    vec![1_f64, 0_f64],
+                    vec![0_f64, 0_f64],
+                    vec![0_f64, 1_f64],
+                    vec![1_f64, 1_f64],
+                ],
+                vec![
+                    vec![1_f64, 1_f64],
+                    vec![2_f64, 1_f64],
+                    vec![2_f64, 0_f64],
+                    vec![1_f64, 0_f64],
+                ],
+            ],
+            objects: vec![NamedGeometry {
+                name: "foo".to_string(),
+                geometry: topojson::Geometry::new(object),
+            }],
+            bbox: None,
+            transform: None,
+            foreign_members: None,
+        };
+        let coords: Vec<(f64, f64)> = vec![
+            (1_f64, 0_f64),
+            (0_f64, 0_f64),
+            (0_f64, 1_f64),
+            (1_f64, 1_f64),
+            (2_f64, 1_f64),
+            (2_f64, 0_f64),
+            (1_f64, 0_f64),
+        ];
+        let exterior: LineString<f64> = coords.into_iter().collect();
+        let mp = Geometry::MultiPolygon(MultiPolygon(vec![Polygon::new(exterior, vec![])]));
 
-    //     assert_eq!(MergeArcs::new(topology).generate(&mut values), mp);
-    // }
+        assert_eq!(MergeArcs::new(topology).merge(&mut values), mp);
+    }
 
     //   //
     //   // +----+----+            +----+----+

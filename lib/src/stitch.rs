@@ -92,7 +92,7 @@ pub(super) fn stitch(topology: &Topology, mut arcs: ArcIndexes) -> Vec<ArcIndexe
                     .unwrap()
                     .clone();
                 stitch.fragment_by_start.insert(key, fg.clone());
-                let key = fg.fragment.borrow_mut().end.clone().unwrap();
+                let key = fg.fragment.borrow_mut().end.unwrap();
                 fg.cross_link = end;
                 stitch.fragment_by_end.insert(key, fg);
             } else {
