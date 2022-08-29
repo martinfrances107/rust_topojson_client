@@ -1,10 +1,10 @@
 use std::cell::RefCell;
-use std::collections::{BTreeMap, HashMap};
+use std::collections::BTreeMap;
 use std::fmt::Debug;
 use std::rc::Rc;
 
 use geo::{CoordFloat, Coordinate, Geometry};
-use topojson::{ArcIndexes, Topology, Value};
+use topojson::{ArcIndexes, NamedGeometry, Topology, Value};
 
 use crate::feature::Builder as FeatureBuilder;
 use crate::polygon_u::PolygonU;
@@ -51,16 +51,19 @@ impl MergeArcs {
     }
 
     // Proces collections of items - 'extract'ing all sub items.
-    fn geometry(&mut self, o: &Value) {
-        match o {
+    fn geometry(&mut self, o: &topojson::Geometry) {
+        // let value = o.value;
+        match &o.value {
             Value::GeometryCollection(gc) => {
-                gc.iter().for_each(|o| self.geometry(&o.value));
+                for g in gc {
+                    self.geometry(g)
+                }
             }
-            Value::Polygon(p) => {
-                self.extract(p);
-            }
+            Value::Polygon(polygon) => self.extract(polygon),
             Value::MultiPolygon(mp) => {
-                mp.iter().for_each(|x| self.extract(x));
+                for p in mp {
+                    self.extract(p);
+                }
             }
             // Ignore ValuesMultiLines, Values::Lines,  Values::Points etc.
             _ => {
@@ -91,7 +94,7 @@ impl MergeArcs {
     }
 
     /// Return merged objects.
-    pub fn merge<T>(&mut self, objects: &mut [Value]) -> Geometry<T>
+    pub fn merge<T>(&mut self, objects: &[NamedGeometry]) -> Geometry<T>
     where
         T: CoordFloat + Debug,
     {
@@ -99,8 +102,8 @@ impl MergeArcs {
         FeatureBuilder::generate(&self.topology, &merge_arcs)
     }
 
-    fn generate(&mut self, objects: &mut [Value]) -> Value {
-        objects.iter().for_each(|o| self.geometry(o));
+    fn generate(&mut self, objects: &[NamedGeometry]) -> Value {
+        objects.iter().for_each(|o| self.geometry(&o.geometry));
 
         self.polygons.clone().iter().for_each(|polygon| {
             if polygon.borrow().is_not_marked() {
@@ -192,6 +195,7 @@ impl MergeArcs {
 #[cfg(test)]
 mod merge_tests {
     use geo::Geometry;
+    use geo::GeometryCollection;
     use geo::LineString;
     use geo::MultiPolygon;
     use geo::Polygon;
@@ -215,6 +219,32 @@ mod merge_tests {
     //     test.end();
     //   });
 
+    // #[test]
+    // fn merge_ignores_null_geometries() {
+    //     println!("merge ignores null geometries");
+    //     let mut values = vec![
+    //         Value::Polygon(vec![vec![0, 1]]),
+    //         Value::Polygon(vec![vec![-1, 2]]),
+    //     ];
+    //     let polys = vec![
+    //         topojson::Geometry::new(Value::Polygon(vec![vec![0, 1]])),
+    //         topojson::Geometry::new(Value::Polygon(vec![vec![-1, 2]])),
+    //     ];
+    //     let object = Value::GeometryCollection(polys);
+    //     let topology = Topology {
+    //         arcs: vec![],
+    //         objects: vec![],
+    //         bbox: None,
+    //         transform: None,
+    //         foreign_members: None,
+    //     };
+    //     let coords: Vec<(f64, f64)> = vec![];
+    //     let exterior: LineString<f64> = coords.into_iter().collect();
+    //     let mp = Geometry::MultiPolygon(MultiPolygon(vec![Polygon::new(exterior, vec![])]));
+
+    //     assert_eq!(MergeArcs::new(topology).merge(&mut values), mp);
+    // }
+
     //
     // +----+----+            +----+----+
     // |    |    |            |         |
@@ -225,15 +255,18 @@ mod merge_tests {
     #[test]
     fn stitches_together_two_side_by_side_polygons() {
         println!("merge stitches together two side-by-side polygons");
-        let mut values = vec![
-            Value::Polygon(vec![vec![0, 1]]),
-            Value::Polygon(vec![vec![-1, 2]]),
+
+        let objects = vec![
+            NamedGeometry {
+                name: "a".to_string(),
+                geometry: topojson::Geometry::new(Value::Polygon(vec![vec![0, 1]])),
+            },
+            NamedGeometry {
+                name: "b".to_string(),
+                geometry: topojson::Geometry::new(Value::Polygon(vec![vec![-1, 2]])),
+            },
         ];
-        let polys = vec![
-            topojson::Geometry::new(Value::Polygon(vec![vec![0, 1]])),
-            topojson::Geometry::new(Value::Polygon(vec![vec![-1, 2]])),
-        ];
-        let object = Value::GeometryCollection(polys);
+
         let topology = Topology {
             arcs: vec![
                 vec![vec![1_f64, 1_f64], vec![1_f64, 0_f64]],
@@ -250,10 +283,7 @@ mod merge_tests {
                     vec![1_f64, 0_f64],
                 ],
             ],
-            objects: vec![NamedGeometry {
-                name: "foo".to_string(),
-                geometry: topojson::Geometry::new(object),
-            }],
+            objects: objects.clone(),
             bbox: None,
             transform: None,
             foreign_members: None,
@@ -270,40 +300,60 @@ mod merge_tests {
         let exterior: LineString<f64> = coords.into_iter().collect();
         let mp = Geometry::MultiPolygon(MultiPolygon(vec![Polygon::new(exterior, vec![])]));
 
-        assert_eq!(MergeArcs::new(topology).merge(&mut values), mp);
+        assert_eq!(MergeArcs::new(topology).merge(&objects), mp);
     }
 
-    //   //
-    //   // +----+----+            +----+----+
-    //   // |    |    |            |         |
-    //   // |    |    |    ==>     |         |
-    //   // |    |    |            |         |
-    //   // +----+----+            +----+----+
-    //   //
-    //   tape("merge stitches together geometry collections", function(test) {
-    //     var topology = {
-    //       "type": "Topology",
-    //       "objects": {
-    //         "collection": {
-    //           "type": "GeometryCollection",
-    //           "geometries": [
-    //             {"type": "Polygon", "arcs": [[0, 1]]},
-    //             {"type": "Polygon", "arcs": [[-1, 2]]}
-    //           ]
-    //         }
-    //       },
-    //       "arcs": [
-    //         [[1, 1], [1, 0]],
-    //         [[1, 0], [0, 0], [0, 1], [1, 1]],
-    //         [[1, 1], [2, 1], [2, 0], [1, 0]]
-    //       ]
-    //     };
-    //     test.deepEqual(topojson.merge(topology, [topology.objects.collection]), {
-    //       type: "MultiPolygon",
-    //       coordinates: [[[[1, 0], [0, 0], [0, 1], [1, 1], [2, 1], [2, 0], [1, 0]]]]
-    //     });
-    //     test.end();
-    //   });
+    #[test]
+    fn stitches_together_geometry_collections() {
+        println!("merge stitches together geometry collections");
+
+        let polys = vec![
+            topojson::Geometry::new(Value::Polygon(vec![vec![0, 1]])),
+            topojson::Geometry::new(Value::Polygon(vec![vec![-1, 2]])),
+        ];
+
+        let object = Value::GeometryCollection(polys);
+
+        let objects = vec![NamedGeometry {
+            name: "foo".to_string(),
+            geometry: topojson::Geometry::new(object),
+        }];
+
+        let topology = Topology {
+            arcs: vec![
+                vec![vec![1_f64, 1_f64], vec![1_f64, 0_f64]],
+                vec![
+                    vec![1_f64, 0_f64],
+                    vec![0_f64, 0_f64],
+                    vec![0_f64, 1_f64],
+                    vec![1_f64, 1_f64],
+                ],
+                vec![
+                    vec![1_f64, 1_f64],
+                    vec![2_f64, 1_f64],
+                    vec![2_f64, 0_f64],
+                    vec![1_f64, 0_f64],
+                ],
+            ],
+            objects: objects.clone(),
+            bbox: None,
+            transform: None,
+            foreign_members: None,
+        };
+        let coords: Vec<(f64, f64)> = vec![
+            (1_f64, 0_f64),
+            (0_f64, 0_f64),
+            (0_f64, 1_f64),
+            (1_f64, 1_f64),
+            (2_f64, 1_f64),
+            (2_f64, 0_f64),
+            (1_f64, 0_f64),
+        ];
+        let exterior: LineString<f64> = coords.into_iter().collect();
+        let mp = Geometry::MultiPolygon(MultiPolygon(vec![Polygon::new(exterior, vec![])]));
+
+        assert_eq!(MergeArcs::new(topology).merge(&objects), mp);
+    }
 
     //   //
     //   // +----+ +----+            +----+ +----+
@@ -413,16 +463,16 @@ mod merge_tests {
     #[test]
     fn stitches_together_two_side_by_side_polygons_with_holes() {
         println!("merge stitches together two side-by-side polygons with holes");
-        let mut values = vec![
-            Value::Polygon(vec![vec![0, 1], vec![2]]),
-            Value::Polygon(vec![vec![-1, 3], vec![4]]),
-        ];
 
         let polys = vec![
             topojson::Geometry::new(Value::Polygon(vec![vec![0, 1], vec![2]])),
             topojson::Geometry::new(Value::Polygon(vec![vec![-1, 3], vec![4]])),
         ];
         let object = Value::GeometryCollection(polys);
+        let objects = vec![NamedGeometry {
+            name: "foo".to_string(),
+            geometry: topojson::Geometry::new(object),
+        }];
 
         let topology = Topology {
             arcs: vec![
@@ -454,10 +504,7 @@ mod merge_tests {
                     vec![4_f64, 1_f64],
                 ],
             ],
-            objects: vec![NamedGeometry {
-                name: "foo".to_string(),
-                geometry: topojson::Geometry::new(object),
-            }],
+            objects: objects.clone(),
             bbox: None,
             transform: None,
             foreign_members: None,
@@ -480,7 +527,7 @@ mod merge_tests {
         );
         let mp = Geometry::MultiPolygon(MultiPolygon::new(vec![p1]));
 
-        assert_eq!(MergeArcs::new(topology).merge(&mut values), mp);
+        assert_eq!(MergeArcs::new(topology).merge(&objects), mp);
     }
 
     //
@@ -495,16 +542,16 @@ mod merge_tests {
     #[test]
     fn merge_stitches_together_two_horseshoe_polygons_creating_a_hole() {
         println!("merge stitches together two horseshoe polygons, creating a hole");
-        let mut values = vec![
-            Value::Polygon(vec![vec![0, 1, 2, 3]]),
-            Value::Polygon(vec![vec![-3, 4, -1, 5]]),
-        ];
 
         let polys = vec![
             topojson::Geometry::new(Value::Polygon(vec![vec![0, 1, 2, 3]])),
             topojson::Geometry::new(Value::Polygon(vec![vec![-3, 4, -1, 5]])),
         ];
         let object = Value::GeometryCollection(polys);
+        let objects = vec![NamedGeometry {
+            name: "foo".to_string(),
+            geometry: topojson::Geometry::new(object),
+        }];
 
         let topology = Topology {
             arcs: vec![
@@ -535,10 +582,7 @@ mod merge_tests {
                     vec![2_f64, 0_f64],
                 ],
             ],
-            objects: vec![NamedGeometry {
-                name: "foo".to_string(),
-                geometry: topojson::Geometry::new(object),
-            }],
+            objects: objects.clone(),
             bbox: None,
             transform: None,
             foreign_members: None,
@@ -566,7 +610,7 @@ mod merge_tests {
         );
         let mp = Geometry::MultiPolygon(MultiPolygon::new(vec![p1]));
 
-        assert_eq!(MergeArcs::new(topology).merge(&mut values), mp);
+        assert_eq!(MergeArcs::new(topology).merge(&objects), mp);
     }
 
     //   //
@@ -582,12 +626,6 @@ mod merge_tests {
     #[test]
     fn merge_stitches_together_two_horseshoe_polygons_surrounding_two_other_polygons() {
         println!("merge stitches together two horseshoe polygons surrounding two other polygons");
-        let mut values = vec![
-            Value::Polygon(vec![vec![0, 1, 2, 3]]),
-            Value::Polygon(vec![vec![-3, 4, -1, 5]]),
-            Value::Polygon(vec![vec![6, -2]]),
-            Value::Polygon(vec![vec![-7, -5]]),
-        ];
 
         let polys = vec![
             topojson::Geometry::new(Value::Polygon(vec![vec![0, 1, 2, 3]])),
@@ -596,6 +634,11 @@ mod merge_tests {
             topojson::Geometry::new(Value::Polygon(vec![vec![-7, -5]])),
         ];
         let object = Value::GeometryCollection(polys);
+
+        let objects = vec![NamedGeometry {
+            name: "foo".to_string(),
+            geometry: topojson::Geometry::new(object),
+        }];
 
         let topology = Topology {
             arcs: vec![
@@ -626,10 +669,7 @@ mod merge_tests {
                     vec![2_f64, 0_f64],
                 ],
             ],
-            objects: vec![NamedGeometry {
-                name: "foo".to_string(),
-                geometry: topojson::Geometry::new(object),
-            }],
+            objects: objects.clone(),
             bbox: None,
             transform: None,
             foreign_members: None,
@@ -649,6 +689,6 @@ mod merge_tests {
         );
         let mp = Geometry::MultiPolygon(MultiPolygon::new(vec![p1]));
 
-        assert_eq!(MergeArcs::new(topology).merge(&mut values), mp);
+        assert_eq!(MergeArcs::new(topology).merge(&objects), mp);
     }
 }
