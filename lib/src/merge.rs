@@ -63,7 +63,9 @@ impl MergeArcs {
                 mp.iter().for_each(|x| self.extract(x));
             }
             // Ignore ValuesMultiLines, Values::Lines,  Values::Points etc.
-            _ => {}
+            _ => {
+                panic!("unprocessed object");
+            }
         }
     }
 
@@ -160,14 +162,10 @@ impl MergeArcs {
                     let mut iter_mut = arcs.iter_mut();
                     let mut k = self.area(iter_mut.next().unwrap().to_vec());
                     let mut ki;
-                    let mut t;
-                    for a in arcs.clone().iter_mut() {
-                        ki = self.area(a.to_vec());
+                    for i in 1..arcs.len() {
+                        ki = self.area(arcs[i].to_vec());
                         if ki > k {
-                            // todo this is a swap with arcs[0]
-                            t = a.clone();
-                            arcs[0] = a.clone();
-                            *a = t;
+                            arcs.swap(0, i);
                             k = ki;
                         }
                     }
@@ -440,86 +438,86 @@ mod merge_tests {
     //     test.end();
     //   });
 
-    // //
-    // // +-----------+-----------+            +-----------+-----------+
-    // // |           |           |            |                       |
-    // // |   +---+   |   +---+   |    ==>     |   +---+       +---+   |
-    // // |   |   |   |   |   |   |            |   |   |       |   |   |
-    // // |   +---+   |   +---+   |            |   +---+       +---+   |
-    // // |           |           |            |                       |
-    // // +-----------+-----------+            +-----------+-----------+
-    // //
-    // #[test]
-    // fn stitches_together_two_side_by_side_polygons_with_holes() {
-    //     let mut values = vec![
-    //         Value::Polygon(vec![vec![0, 1], vec![2]]),
-    //         Value::Polygon(vec![vec![-1, 3], vec![4]]),
-    //     ];
+    //
+    // +-----------+-----------+            +-----------+-----------+
+    // |           |           |            |                       |
+    // |   +---+   |   +---+   |    ==>     |   +---+       +---+   |
+    // |   |   |   |   |   |   |            |   |   |       |   |   |
+    // |   +---+   |   +---+   |            |   +---+       +---+   |
+    // |           |           |            |                       |
+    // +-----------+-----------+            +-----------+-----------+
+    //
+    #[test]
+    fn stitches_together_two_side_by_side_polygons_with_holes() {
+        let mut values = vec![
+            Value::Polygon(vec![vec![0, 1], vec![2]]),
+            Value::Polygon(vec![vec![-1, 3], vec![4]]),
+        ];
 
-    //     let polys = vec![
-    //         topojson::Geometry::new(Value::Polygon(vec![vec![0, 1], vec![2]])),
-    //         topojson::Geometry::new(Value::Polygon(vec![vec![-1, 3], vec![4]])),
-    //     ];
-    //     let object = Value::GeometryCollection(polys);
+        let polys = vec![
+            topojson::Geometry::new(Value::Polygon(vec![vec![0, 1], vec![2]])),
+            topojson::Geometry::new(Value::Polygon(vec![vec![-1, 3], vec![4]])),
+        ];
+        let object = Value::GeometryCollection(polys);
 
-    //     let topology = Topology {
-    //         arcs: vec![
-    //             vec![vec![3_f64, 3_f64], vec![3_f64, 0_f64]],
-    //             vec![
-    //                 vec![3_f64, 0_f64],
-    //                 vec![0_f64, 0_f64],
-    //                 vec![0_f64, 3_f64],
-    //                 vec![3_f64, 3_f64],
-    //             ],
-    //             vec![
-    //                 vec![1_f64, 1_f64],
-    //                 vec![2_f64, 1_f64],
-    //                 vec![2_f64, 2_f64],
-    //                 vec![1_f64, 2_f64],
-    //                 vec![1_f64, 1_f64],
-    //             ],
-    //             vec![
-    //                 vec![3_f64, 3_f64],
-    //                 vec![6_f64, 3_f64],
-    //                 vec![6_f64, 0_f64],
-    //                 vec![3_f64, 0_f64],
-    //             ],
-    //             vec![
-    //                 vec![4_f64, 1_f64],
-    //                 vec![5_f64, 1_f64],
-    //                 vec![5_f64, 2_f64],
-    //                 vec![4_f64, 2_f64],
-    //                 vec![4_f64, 1_f64],
-    //             ],
-    //         ],
-    //         objects: vec![NamedGeometry {
-    //             name: "foo".to_string(),
-    //             geometry: topojson::Geometry::new(object),
-    //         }],
-    //         bbox: None,
-    //         transform: None,
-    //         foreign_members: None,
-    //     };
+        let topology = Topology {
+            arcs: vec![
+                vec![vec![3_f64, 3_f64], vec![3_f64, 0_f64]],
+                vec![
+                    vec![3_f64, 0_f64],
+                    vec![0_f64, 0_f64],
+                    vec![0_f64, 3_f64],
+                    vec![3_f64, 3_f64],
+                ],
+                vec![
+                    vec![1_f64, 1_f64],
+                    vec![2_f64, 1_f64],
+                    vec![2_f64, 2_f64],
+                    vec![1_f64, 2_f64],
+                    vec![1_f64, 1_f64],
+                ],
+                vec![
+                    vec![3_f64, 3_f64],
+                    vec![6_f64, 3_f64],
+                    vec![6_f64, 0_f64],
+                    vec![3_f64, 0_f64],
+                ],
+                vec![
+                    vec![4_f64, 1_f64],
+                    vec![5_f64, 1_f64],
+                    vec![5_f64, 2_f64],
+                    vec![4_f64, 2_f64],
+                    vec![4_f64, 1_f64],
+                ],
+            ],
+            objects: vec![NamedGeometry {
+                name: "foo".to_string(),
+                geometry: topojson::Geometry::new(object),
+            }],
+            bbox: None,
+            transform: None,
+            foreign_members: None,
+        };
 
-    //     let p1 = Polygon::new(
-    //         LineString::from(vec![
-    //             (3.0_f64, 0.0_f64),
-    //             (0.0_f64, 0.0_f64),
-    //             (0.0_f64, 3.0_f64),
-    //             (3.0_f64, 3.0_f64),
-    //             (6.0_f64, 3.0_f64),
-    //             (6.0_f64, 0.0_f64),
-    //             (3.0_f64, 0.0_f64),
-    //         ]),
-    //         vec![
-    //             LineString::from(vec![(1., 1.), (2., 1.), (2., 2.), (1., 2.), (1., 1.)]),
-    //             LineString::from(vec![(4., 1.), (5., 1.), (5., 2.), (4., 2.), (4., 1.)]),
-    //         ],
-    //     );
-    //     let mp = Geometry::MultiPolygon(MultiPolygon::new(vec![p1]));
+        let p1 = Polygon::new(
+            LineString::from(vec![
+                (3.0_f64, 0.0_f64),
+                (0.0_f64, 0.0_f64),
+                (0.0_f64, 3.0_f64),
+                (3.0_f64, 3.0_f64),
+                (6.0_f64, 3.0_f64),
+                (6.0_f64, 0.0_f64),
+                (3.0_f64, 0.0_f64),
+            ]),
+            vec![
+                LineString::from(vec![(1., 1.), (2., 1.), (2., 2.), (1., 2.), (1., 1.)]),
+                LineString::from(vec![(4., 1.), (5., 1.), (5., 2.), (4., 2.), (4., 1.)]),
+            ],
+        );
+        let mp = Geometry::MultiPolygon(MultiPolygon::new(vec![p1]));
 
-    //     assert_eq!(MergeArcs::new(topology).merge(&mut values), mp);
-    // }
+        assert_eq!(MergeArcs::new(topology).merge(&mut values), mp);
+    }
 
     //   //
     //   // +-------+-------+            +-------+-------+
