@@ -88,16 +88,16 @@ impl MergeArcs {
         self.polygons.push(pu);
     }
 
-    fn merge<T>(&mut self, objects: &mut [Value]) -> Geometry<T>
+    /// Return merged objects.
+    pub fn merge<T>(&mut self, objects: &mut [Value]) -> Geometry<T>
     where
         T: CoordFloat + Debug,
     {
-        let ma = self.generate(objects);
-        FeatureBuilder::generate(&self.topology, &ma)
+        let merge_arcs = self.generate(objects);
+        FeatureBuilder::generate(&self.topology, &merge_arcs)
     }
 
-    /// Merge selected objects.
-    pub fn generate(&mut self, objects: &mut [Value]) -> Value {
+    fn generate(&mut self, objects: &mut [Value]) -> Value {
         objects.iter().for_each(|o| self.geometry(o));
 
         self.polygons.clone().iter().for_each(|polygon| {
@@ -453,12 +453,12 @@ mod merge_tests {
     // fn stitches_together_two_side_by_side_polygons_with_holes() {
     //     let mut values = vec![
     //         Value::Polygon(vec![vec![0, 1], vec![2]]),
-    //         Value::Polygon(vec![vec![-1, 2], vec![4]]),
+    //         Value::Polygon(vec![vec![-1, 3], vec![4]]),
     //     ];
 
     //     let polys = vec![
     //         topojson::Geometry::new(Value::Polygon(vec![vec![0, 1], vec![2]])),
-    //         topojson::Geometry::new(Value::Polygon(vec![vec![-1, 2], vec![4]])),
+    //         topojson::Geometry::new(Value::Polygon(vec![vec![-1, 3], vec![4]])),
     //     ];
     //     let object = Value::GeometryCollection(polys);
 
@@ -508,7 +508,7 @@ mod merge_tests {
     //             (0.0_f64, 3.0_f64),
     //             (3.0_f64, 3.0_f64),
     //             (6.0_f64, 3.0_f64),
-    //             (6.0_f64, 6.0_f64),
+    //             (6.0_f64, 0.0_f64),
     //             (3.0_f64, 0.0_f64),
     //         ]),
     //         vec![
