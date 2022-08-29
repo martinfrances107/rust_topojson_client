@@ -578,34 +578,77 @@ mod merge_tests {
     //   // |       |       |            |               |
     //   // +-------+-------+            +-------+-------+
     //   //
-    //   tape("merge stitches together two horseshoe polygons surrounding two other polygons", function(test) {
-    //     var topology = {
-    //       "type": "Topology",
-    //       "objects": {
-    //         "collection": {
-    //           "type": "GeometryCollection",
-    //           "geometries": [
-    //             {"type": "Polygon", "arcs": [[0, 1, 2, 3]]},
-    //             {"type": "Polygon", "arcs": [[-3, 4, -1, 5]]},
-    //             {"type": "Polygon", "arcs": [[6, -2]]},
-    //             {"type": "Polygon", "arcs": [[-7, -5]]}
-    //           ]
-    //         }
-    //       },
-    //       "arcs": [
-    //         [[2, 3], [2, 2]],
-    //         [[2, 2], [1, 2], [1, 1], [2, 1]],
-    //         [[2, 1], [2, 0]],
-    //         [[2, 0], [0, 0], [0, 3], [2, 3]],
-    //         [[2, 1], [3, 1], [3, 2], [2, 2]],
-    //         [[2, 3], [4, 3], [4, 0], [2, 0]],
-    //         [[2, 2], [2, 1]]
-    //       ]
-    //     };
-    //     test.deepEqual(topojson.merge(topology, topology.objects.collection.geometries), {
-    //       type: "MultiPolygon",
-    //       coordinates: [[[[2, 0], [0, 0], [0, 3], [2, 3], [4, 3], [4, 0], [2, 0]]]]
-    //     });
-    //     test.end();
-    //   });
+    //
+    #[test]
+    fn merge_stitches_together_two_horseshoe_polygons_surrounding_two_other_polygons() {
+        println!("merge stitches together two horseshoe polygons surrounding two other polygons");
+        let mut values = vec![
+            Value::Polygon(vec![vec![0, 1, 2, 3]]),
+            Value::Polygon(vec![vec![-3, 4, -1, 5]]),
+            Value::Polygon(vec![vec![6, -2]]),
+            Value::Polygon(vec![vec![-7, -5]]),
+        ];
+
+        let polys = vec![
+            topojson::Geometry::new(Value::Polygon(vec![vec![0, 1, 2, 3]])),
+            topojson::Geometry::new(Value::Polygon(vec![vec![-3, 4, -1, 5]])),
+            topojson::Geometry::new(Value::Polygon(vec![vec![6, -2]])),
+            topojson::Geometry::new(Value::Polygon(vec![vec![-7, -5]])),
+        ];
+        let object = Value::GeometryCollection(polys);
+
+        let topology = Topology {
+            arcs: vec![
+                vec![vec![2_f64, 3_f64], vec![2_f64, 2_f64]],
+                vec![
+                    vec![2_f64, 2_f64],
+                    vec![1_f64, 2_f64],
+                    vec![1_f64, 1_f64],
+                    vec![2_f64, 1_f64],
+                ],
+                vec![vec![2_f64, 1_f64], vec![2_f64, 0_f64]],
+                vec![
+                    vec![2_f64, 0_f64],
+                    vec![0_f64, 0_f64],
+                    vec![0_f64, 3_f64],
+                    vec![2_f64, 3_f64],
+                ],
+                vec![
+                    vec![2_f64, 1_f64],
+                    vec![3_f64, 1_f64],
+                    vec![3_f64, 2_f64],
+                    vec![2_f64, 2_f64],
+                ],
+                vec![
+                    vec![2_f64, 3_f64],
+                    vec![4_f64, 3_f64],
+                    vec![4_f64, 0_f64],
+                    vec![2_f64, 0_f64],
+                ],
+            ],
+            objects: vec![NamedGeometry {
+                name: "foo".to_string(),
+                geometry: topojson::Geometry::new(object),
+            }],
+            bbox: None,
+            transform: None,
+            foreign_members: None,
+        };
+
+        let p1 = Polygon::new(
+            LineString::from(vec![
+                (2.0_f64, 0.0_f64),
+                (0.0_f64, 0.0_f64),
+                (0.0_f64, 3.0_f64),
+                (2.0_f64, 3.0_f64),
+                (4.0_f64, 3.0_f64),
+                (4.0_f64, 0.0_f64),
+                (2.0_f64, 0.0_f64),
+            ]),
+            vec![],
+        );
+        let mp = Geometry::MultiPolygon(MultiPolygon::new(vec![p1]));
+
+        assert_eq!(MergeArcs::new(topology).merge(&mut values), mp);
+    }
 }
