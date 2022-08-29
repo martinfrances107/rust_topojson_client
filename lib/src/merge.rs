@@ -279,6 +279,13 @@ mod merge_tests {
         assert_eq!(MergeArcs::new(topology).merge(&objects), mp);
     }
 
+    //
+    // +----+----+            +----+----+
+    // |    |    |            |         |
+    // |    |    |    ==>     |         |
+    // |    |    |            |         |
+    // +----+----+            +----+----+
+    //
     #[test]
     fn stitches_together_geometry_collections() {
         println!("merge stitches together geometry collections");
@@ -331,36 +338,66 @@ mod merge_tests {
         assert_eq!(MergeArcs::new(topology).merge(&objects), mp);
     }
 
-    //   //
-    //   // +----+ +----+            +----+ +----+
-    //   // |    | |    |            |    | |    |
-    //   // |    | |    |    ==>     |    | |    |
-    //   // |    | |    |            |    | |    |
-    //   // +----+ +----+            +----+ +----+
-    //   //
-    //   tape("merge does not stitch together two separated polygons", function(test) {
-    //     var topology = {
-    //       "type": "Topology",
-    //       "objects": {
-    //         "collection": {
-    //           "type": "GeometryCollection",
-    //           "geometries": [
-    //             {"type": "Polygon", "arcs": [[0]]},
-    //             {"type": "Polygon", "arcs": [[1]]}
-    //           ]
-    //         }
-    //       },
-    //       "arcs": [
-    //         [[0, 0], [0, 1], [1, 1], [1, 0], [0, 0]],
-    //         [[2, 0], [2, 1], [3, 1], [3, 0], [2, 0]]
-    //       ]
-    //     };
-    //     test.deepEqual(topojson.merge(topology, topology.objects.collection.geometries), {
-    //       type: "MultiPolygon",
-    //       coordinates: [[[[0, 0], [0, 1], [1, 1], [1, 0], [0, 0]]], [[[2, 0], [2, 1], [3, 1], [3, 0], [2, 0]]]]
-    //     });
-    //     test.end();
-    //   });
+    #[test]
+    fn merge_does_not_stitch_together_two_separated_polygons() {
+        println!("merge does not stitch together two separated polygons");
+
+        let objects = vec![
+            NamedGeometry {
+                name: "a".to_string(),
+                geometry: topojson::Geometry::new(Value::Polygon(vec![vec![0]])),
+            },
+            NamedGeometry {
+                name: "b".to_string(),
+                geometry: topojson::Geometry::new(Value::Polygon(vec![vec![1]])),
+            },
+        ];
+
+        let topology = Topology {
+            arcs: vec![
+                vec![
+                    vec![0_f64, 0_f64],
+                    vec![0_f64, 1_f64],
+                    vec![1_f64, 1_f64],
+                    vec![1_f64, 0_f64],
+                    vec![0_f64, 0_f64],
+                ],
+                vec![
+                    vec![2_f64, 0_f64],
+                    vec![2_f64, 1_f64],
+                    vec![3_f64, 1_f64],
+                    vec![3_f64, 0_f64],
+                    vec![2_f64, 0_f64],
+                ],
+            ],
+            objects: objects.clone(),
+            bbox: None,
+            transform: None,
+            foreign_members: None,
+        };
+        let coords1: Vec<(f64, f64)> = vec![
+            (0_f64, 0_f64),
+            (0_f64, 1_f64),
+            (1_f64, 1_f64),
+            (1_f64, 0_f64),
+            (0_f64, 0_f64),
+        ];
+        let coords2: Vec<(f64, f64)> = vec![
+            (2_f64, 0_f64),
+            (2_f64, 1_f64),
+            (3_f64, 1_f64),
+            (3_f64, 0_f64),
+            (2_f64, 0_f64),
+        ];
+        let exterior1: LineString<f64> = coords1.into_iter().collect();
+        let exterior2: LineString<f64> = coords2.into_iter().collect();
+        let mp = Geometry::MultiPolygon(MultiPolygon(vec![
+            Polygon::new(exterior1, vec![]),
+            Polygon::new(exterior2, vec![]),
+        ]));
+
+        assert_eq!(MergeArcs::new(topology).merge(&objects), mp);
+    }
 
     //   //
     //   // +-----------+            +-----------+
@@ -371,29 +408,63 @@ mod merge_tests {
     //   // |           |            |           |
     //   // +-----------+            +-----------+
     //   //
-    //   tape("merge does not stitch together a polygon and its hole", function(test) {
-    //     var topology = {
-    //       "type": "Topology",
-    //       "objects": {
-    //         "collection": {
-    //           "type": "GeometryCollection",
-    //           "geometries": [
-    //             {"type": "Polygon", "arcs": [[0], [1]]}
-    //           ]
-    //         }
-    //       },
-    //       "arcs": [
-    //         [[0, 0], [0, 3], [3, 3], [3, 0], [0, 0]],
-    //         [[1, 1], [2, 1], [2, 2], [1, 2], [1, 1]]
-    //       ]
-    //     };
-    //     test.deepEqual(topojson.merge(topology, topology.objects.collection.geometries), {
-    //       type: "MultiPolygon",
-    //       coordinates: [[[[0, 0], [0, 3], [3, 3], [3, 0], [0, 0]], [[1, 1], [2, 1], [2, 2], [1, 2], [1, 1]]]]
-    //     });
-    //     test.end();
-    //   });
+    #[test]
+    fn merge_does_not_stitch_together_a_polygon_and_its_hole() {
+        println!("merge does not stitch together a polygon and its hole");
 
+        let polys = vec![topojson::Geometry::new(Value::Polygon(vec![
+            vec![0],
+            vec![1],
+        ]))];
+        let object = Value::GeometryCollection(polys);
+        let objects = vec![NamedGeometry {
+            name: "foo".to_string(),
+            geometry: topojson::Geometry::new(object),
+        }];
+
+        let topology = Topology {
+            arcs: vec![
+                vec![
+                    vec![0_f64, 0_f64],
+                    vec![0_f64, 3_f64],
+                    vec![3_f64, 3_f64],
+                    vec![3_f64, 0_f64],
+                    vec![0_f64, 0_f64],
+                ],
+                vec![
+                    vec![1_f64, 1_f64],
+                    vec![2_f64, 1_f64],
+                    vec![2_f64, 2_f64],
+                    vec![1_f64, 2_f64],
+                    vec![1_f64, 1_f64],
+                ],
+            ],
+            objects: objects.clone(),
+            bbox: None,
+            transform: None,
+            foreign_members: None,
+        };
+
+        let p1 = Polygon::new(
+            LineString::from(vec![
+                (0.0_f64, 0.0_f64),
+                (0.0_f64, 3.0_f64),
+                (3.0_f64, 3.0_f64),
+                (3.0_f64, 0.0_f64),
+                (0.0_f64, 0.0_f64),
+            ]),
+            vec![LineString::from(vec![
+                (1_f64, 1_f64),
+                (2_f64, 1_f64),
+                (2_f64, 2_f64),
+                (1_f64, 2_f64),
+                (1_f64, 1_f64),
+            ])],
+        );
+        let mp = Geometry::MultiPolygon(MultiPolygon::new(vec![p1]));
+
+        assert_eq!(MergeArcs::new(topology).merge(&objects), mp);
+    }
     //
     // +-----------+            +-----------+
     // |           |            |           |
