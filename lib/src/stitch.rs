@@ -42,7 +42,7 @@ pub(super) fn stitch(topology: &Topology, mut arcs: ArcIndexes) -> Vec<ArcIndexe
         let end = gen_key(e.get(1).unwrap());
 
         if let Some(f) = stitch.fragment_by_end.clone().get(&start) {
-            let key = f.clone().borrow_mut().end.as_ref().unwrap().clone();
+            let key = *f.clone().borrow_mut().end.as_ref().unwrap();
             stitch.fragment_by_end.remove(&key);
             f.borrow_mut().items.push_back(*i);
             f.borrow_mut().end = Some(end);
@@ -71,7 +71,7 @@ pub(super) fn stitch(topology: &Topology, mut arcs: ArcIndexes) -> Vec<ArcIndexe
                         end: Some(g_end),
                     }))
                 };
-                let key = f.clone().borrow_mut().end.as_ref().unwrap().clone();
+                let key = *f.clone().borrow_mut().end.as_ref().unwrap();
                 stitch.fragment_by_start.insert(key, fg.clone());
                 let key = fg.borrow_mut().end.unwrap();
                 stitch.fragment_by_end.insert(key, fg);
@@ -85,7 +85,7 @@ pub(super) fn stitch(topology: &Topology, mut arcs: ArcIndexes) -> Vec<ArcIndexe
             }
         } else if let Some(f) = stitch.fragment_by_start.get(&end) {
             let f = f.clone();
-            let key = f.borrow_mut().start.as_ref().unwrap().clone();
+            let key = *f.borrow_mut().start.as_ref().unwrap();
             stitch.fragment_by_start.remove(&key);
             f.borrow_mut().items.push_front(*i);
             f.borrow_mut().start = Some(start);
