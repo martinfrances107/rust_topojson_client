@@ -10,7 +10,7 @@ mod world_test {
     use std::fs::File;
 
     use geo::{Geometry, GeometryCollection};
-    use rust_topojson_client::feature::Builder;
+    use rust_topojson_client::feature::feature_from_name;
     use topojson::Topology;
 
     /// Asserts that a MultiPolygon object with 1428 polygons
@@ -23,7 +23,7 @@ mod world_test {
         let topology: Topology =
             serde_json::from_reader(file).expect("File should be parse as JSON.");
 
-        match Builder::generate_from_name::<f64>(&topology, &"land") {
+        match feature_from_name::<f64>(&topology, &"land") {
             Some(Geometry::GeometryCollection(GeometryCollection(v_geometry))) => {
                 assert_eq!(v_geometry.len(), 1);
                 match &v_geometry[0] {
@@ -40,7 +40,7 @@ mod world_test {
             }
         };
 
-        match Builder::generate_from_name::<f64>(&topology, &"countries") {
+        match feature_from_name::<f64>(&topology, &"countries") {
             Some(Geometry::GeometryCollection(GeometryCollection(v_geometry))) => {
                 assert_eq!(v_geometry.len(), 241);
             }

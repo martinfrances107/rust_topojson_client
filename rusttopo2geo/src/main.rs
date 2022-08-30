@@ -5,14 +5,14 @@ use std::fs::File;
 use std::io;
 use std::io::prelude::*;
 
-use clap::Command;
 use clap::Arg;
+use clap::Command;
 use geo::CoordNum;
+use geo::Geometry;
 use serde::Serialize;
 use topojson::Topology;
-use geo::Geometry;
 
-use rust_topojson_client::feature::Builder as FeatureBuilder;
+use rust_topojson_client::feature::feature_from_name;
 
 fn main() -> io::Result<()> {
     let matches = Command::new("topo2geo")
@@ -50,7 +50,7 @@ fn main() -> io::Result<()> {
 
     if matches.contains_id("LIST") {
         write_list(&topo);
-    } else if matches.contains_id("INPUT"){
+    } else if matches.contains_id("INPUT") {
         write(&topo)?
     }
     Ok(())
@@ -87,7 +87,7 @@ fn write(topo: &Topology) -> io::Result<()> {
         panic!("error: object {} not found", name)
     }
 
-    if let Some(feature) = FeatureBuilder::generate_from_name::<f64>(topo, name) {
+    if let Some(feature) = feature_from_name::<f64>(topo, name) {
         //TODO refactor of newlinedelited option
         println!("about to write");
         write_feature("out.txt", &feature)?;

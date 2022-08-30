@@ -19,56 +19,56 @@ use topojson::Value;
 use crate::reverse::reverse;
 use crate::transform::gen_transform;
 
+/// Given a object name find convert and return a Geometry object.
+///
+/// None: -
+///   * The object subsection does not contain the name.
+#[inline]
+pub fn feature_from_name<T>(topology: &Topology, name: &str) -> Option<Geometry<T>>
+where
+    T: CoordFloat,
+{
+    topology
+        .objects
+        .iter()
+        .find(|x| x.name == name)
+        .map(|ng| feature(topology, &ng.geometry.value))
+}
+
+/// Given a json gemetry value apply a transform and convert.
+///
+/// If the transform params are ommited use identity scaling
+/// and no translation.
+#[inline]
+pub fn feature<T>(topology: &Topology, o: &Value) -> Geometry<T>
+where
+    T: CoordFloat,
+{
+    // let tp = match &topology.transform {
+    //     None => &TransformParams {
+    //         scale: [1_f64, 1_f64],
+    //         translate: [0_f64, 0_f64],
+    //     },
+    //     Some(transform_params) => transform_params,
+    // };
+
+    Builder {
+        arcs: topology.arcs.clone(),
+        transform: gen_transform(&topology.transform),
+    }
+    .geometry(o)
+}
+
 #[derive(Derivative)]
 #[derivative(Debug)]
 /// State holds data extracted from a Topological object.
-pub struct Builder {
+struct Builder {
     arcs: Vec<Arc>,
     #[derivative(Debug = "ignore")]
     transform: Box<dyn FnMut(&[f64], usize) -> Vec<f64>>,
 }
 
 impl Builder {
-    /// Given a object name find convert and return a Geometry object.
-    ///
-    /// None: -
-    ///   * The object subsection does not contain the name.
-    #[inline]
-    pub fn generate_from_name<T>(topology: &Topology, name: &str) -> Option<Geometry<T>>
-    where
-        T: CoordFloat,
-    {
-        topology
-            .objects
-            .iter()
-            .find(|x| x.name == name)
-            .map(|ng| Builder::generate(topology, &ng.geometry.value))
-    }
-
-    /// Given a json gemetry value apply a transform and convert.
-    ///
-    /// If the transform params are ommited use identity scaling
-    /// and no translation.
-    #[inline]
-    pub fn generate<T>(topology: &Topology, o: &Value) -> Geometry<T>
-    where
-        T: CoordFloat,
-    {
-        // let tp = match &topology.transform {
-        //     None => &TransformParams {
-        //         scale: [1_f64, 1_f64],
-        //         translate: [0_f64, 0_f64],
-        //     },
-        //     Some(transform_params) => transform_params,
-        // };
-
-        Self {
-            arcs: topology.arcs.clone(),
-            transform: gen_transform(&topology.transform),
-        }
-        .geometry(o)
-    }
-
     /// Convert the index found in a Geometry object into a point.
     ///
     /// Using the top level arcs array as reference.
@@ -287,7 +287,7 @@ mod feature_tests {
         println!("topojson.feature the geometry type is preserved");
         let t = simple_topology(topojson::Geometry::new(Value::Polygon(vec![vec![0]])));
 
-        match Builder::generate_from_name::<f64>(&t, &"foo") {
+        match feature_from_name::<f64>(&t, &"foo") {
             Some(g) => match g {
                 Geometry::Polygon(_) => {
                     assert!(true, "Must produce polygon");
@@ -308,7 +308,7 @@ mod feature_tests {
         let t = simple_topology(topojson::Geometry::new(Value::Point(vec![0_f64, 0_f64])));
 
         assert_eq!(
-            Builder::generate_from_name(&t, &"foo"),
+            feature_from_name(&t, &"foo"),
             Some(Geometry::Point(Point(Coordinate { x: 0_f64, y: 0_f64 })))
         );
     }
@@ -322,7 +322,7 @@ mod feature_tests {
         ])));
 
         assert_eq!(
-            Builder::generate_from_name(&t, &"foo"),
+            feature_from_name(&t, &"foo"),
             Some(Geometry::MultiPoint(MultiPoint(vec![
                 Point(Coordinate { x: 0_f64, y: 0_f64 }),
                 Point(Coordinate {
@@ -340,7 +340,7 @@ mod feature_tests {
         let t = simple_topology(topojson::Geometry::new(Value::LineString(vec![0])));
 
         assert_eq!(
-            Builder::generate_from_name(&t, &"foo"),
+            feature_from_name(&t, &"foo"),
             Some(Geometry::LineString(LineString(vec![
                 Coordinate { x: 0_f64, y: 0_f64 },
                 Coordinate { x: 1_f64, y: 0_f64 },
@@ -359,7 +359,7 @@ mod feature_tests {
         ]])));
 
         assert_eq!(
-            Builder::generate_from_name(&t, &"foo"),
+            feature_from_name(&t, &"foo"),
             Some(Geometry::MultiLineString(MultiLineString(vec![
                 LineString(vec![
                     Coordinate { x: 0_f64, y: 0_f64 },
@@ -378,7 +378,7 @@ mod feature_tests {
         let t1 = simple_topology(topojson::Geometry::new(Value::LineString(vec![3])));
 
         assert_eq!(
-            Builder::generate_from_name(&t1, &"foo"),
+            feature_from_name(&t1, &"foo"),
             Some(Geometry::LineString(LineString(vec![
                 Coordinate { x: 1_f64, y: 1_f64 },
                 Coordinate { x: 1_f64, y: 1_f64 },
@@ -391,7 +391,7 @@ mod feature_tests {
         ])));
 
         assert_eq!(
-            Builder::generate_from_name(&t2, &"foo"),
+            feature_from_name(&t2, &"foo"),
             Some(Geometry::MultiLineString(MultiLineString(vec![
                 LineString(vec![
                     Coordinate { x: 1_f64, y: 1_f64 },
@@ -411,7 +411,7 @@ mod feature_tests {
         let t = simple_topology(topojson::Geometry::new(Value::Polygon(vec![vec![0]])));
 
         assert_eq!(
-            Builder::generate_from_name(&t, &"foo"),
+            feature_from_name(&t, &"foo"),
             Some(Geometry::Polygon(Polygon::new(
                 LineString(vec![
                     Coordinate { x: 0_f64, y: 0_f64 },
@@ -433,7 +433,7 @@ mod feature_tests {
         ]])));
 
         assert_eq!(
-            Builder::generate_from_name(&t, &"foo"),
+            feature_from_name(&t, &"foo"),
             Some(Geometry::MultiPolygon(MultiPolygon(vec![Polygon::new(
                 LineString(vec![
                     Coordinate { x: 0_f64, y: 0_f64 },
@@ -474,7 +474,7 @@ mod feature_tests {
         };
 
         assert_eq!(
-            Builder::generate_from_name(&topology, &"foo"),
+            feature_from_name(&topology, &"foo"),
             Some(Geometry::Polygon(Polygon::new(
                 LineString(vec![
                     Coordinate { x: 0_f64, y: 0_f64 },
@@ -487,7 +487,7 @@ mod feature_tests {
         );
 
         assert_eq!(
-            Builder::generate_from_name(&topology, &"bar"),
+            feature_from_name(&topology, &"bar"),
             Some(Geometry::Polygon(Polygon::new(
                 LineString(vec![
                     Coordinate { x: 0_f64, y: 0_f64 },
@@ -511,7 +511,7 @@ mod feature_tests {
         ])));
 
         assert_eq!(
-            Builder::generate_from_name(&t, &"foo"),
+            feature_from_name(&t, &"foo"),
             Some(Geometry::GeometryCollection(GeometryCollection(vec![
                 Geometry::MultiPolygon(MultiPolygon(vec![Polygon::new(
                     LineString(vec![
@@ -538,7 +538,7 @@ mod feature_tests {
         ])));
 
         assert_eq!(
-            Builder::generate_from_name(&t, &"foo"),
+            feature_from_name(&t, &"foo"),
             Some(Geometry::GeometryCollection(GeometryCollection(vec![
                 Geometry::GeometryCollection(GeometryCollection(vec![Geometry::Point(Point(
                     Coordinate { x: 0_f64, y: 0_f64 }
@@ -588,7 +588,7 @@ mod feature_tests {
         println!("topojson.feature arcs are converted to coordinates");
         let t = simple_topology(topojson::Geometry::new(Value::Polygon(vec![vec![0_i32]])));
         assert_eq!(
-            Builder::generate_from_name(&t, &"foo"),
+            feature_from_name(&t, &"foo"),
             Some(Geometry::Polygon(Polygon::new(
                 LineString(vec![
                     Coordinate { x: 0_f64, y: 0_f64 },
@@ -607,7 +607,7 @@ mod feature_tests {
         println!("topojson.feature negative arc indexes indicate reversed coordinates");
         let t = simple_topology(topojson::Geometry::new(Value::Polygon(vec![vec![!0_i32]])));
         assert_eq!(
-            Builder::generate_from_name(&t, &"foo"),
+            feature_from_name(&t, &"foo"),
             Some(Geometry::Polygon(Polygon::new(
                 LineString(vec![
                     Coordinate { x: 0_f64, y: 0_f64 },
@@ -628,7 +628,7 @@ mod feature_tests {
             1_i32, 2_i32,
         ]])));
         assert_eq!(
-            Builder::generate_from_name(&t1, &"foo"),
+            feature_from_name(&t1, &"foo"),
             Some(Geometry::Polygon(Polygon::new(
                 LineString(vec![
                     Coordinate { x: 0_f64, y: 0_f64 },
@@ -645,7 +645,7 @@ mod feature_tests {
             !2_i32, !1_i32,
         ]])));
         assert_eq!(
-            Builder::generate_from_name(&t2, &"foo"),
+            feature_from_name(&t2, &"foo"),
             Some(Geometry::Polygon(Polygon::new(
                 LineString(vec![
                     Coordinate { x: 0_f64, y: 0_f64 },
@@ -693,7 +693,7 @@ mod feature_tests {
             foreign_members: None,
         };
         assert_eq!(
-            Builder::generate_from_name(&t, &"foo"),
+            feature_from_name(&t, &"foo"),
             Some(Geometry::Point(Point::new(1_f64, 2_f64)))
         );
     }
@@ -712,7 +712,7 @@ mod feature_tests {
             foreign_members: None,
         };
         assert_eq!(
-            Builder::generate_from_name(&t, &"foo"),
+            feature_from_name(&t, &"foo"),
             Some(Geometry::MultiPoint(MultiPoint(vec![Point::new(
                 1_f64, 2_f64
             )])))
@@ -736,7 +736,7 @@ mod feature_tests {
             foreign_members: None,
         };
         assert_eq!(
-            Builder::generate_from_name(&t, &"foo"),
+            feature_from_name(&t, &"foo"),
             Some(Geometry::LineString(LineString(vec![
                 Coordinate { x: 1_f64, y: 2_f64 },
                 Coordinate { x: 3_f64, y: 4_f64 }

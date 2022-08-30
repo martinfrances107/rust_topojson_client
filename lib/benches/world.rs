@@ -1,16 +1,16 @@
 extern crate criterion;
 extern crate geo;
-extern crate topojson;
 extern crate rust_topojson_client;
+extern crate topojson;
 
 use std::fs::File;
 use std::io::Read;
 
+use criterion::{criterion_group, criterion_main, Criterion};
 use geo::{Geometry, GeometryCollection};
 use topojson::Topology;
-use criterion::{ criterion_group, criterion_main, Criterion};
 
-use rust_topojson_client::feature::Builder;
+use rust_topojson_client::feature::feature_from_name;
 
 pub fn criterion_benchmark(c: &mut Criterion) {
     let mut file = File::open("./tests/world-atlas/world/50m.json").expect("File did not open.");
@@ -22,7 +22,7 @@ pub fn criterion_benchmark(c: &mut Criterion) {
 
     c.bench_function("world", |b| {
         b.iter(|| {
-            match Builder::generate_from_name::<f64>(&topology, &"land") {
+            match feature_from_name::<f64>(&topology, &"land") {
                 Some(Geometry::GeometryCollection(GeometryCollection(v_geometry))) => {
                     assert_eq!(v_geometry.len(), 1);
                     match &v_geometry[0] {

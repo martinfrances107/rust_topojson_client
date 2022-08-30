@@ -6,7 +6,7 @@ use std::rc::Rc;
 use geo::{CoordFloat, Coordinate, Geometry};
 use topojson::{ArcIndexes, NamedGeometry, Topology, Value};
 
-use crate::feature::Builder as FeatureBuilder;
+use crate::feature::feature;
 use crate::polygon_u::PolygonU;
 use crate::stitch::stitch;
 use crate::translate;
@@ -110,7 +110,7 @@ where
     let ma = Value::MultiPolygon(polygon_arcs);
 
     // let merge_arcs = ma.generate(objects);
-    FeatureBuilder::generate(topology, &ma)
+    feature(topology, &ma)
 }
 
 #[derive(Debug)]
@@ -132,7 +132,7 @@ impl<'a> MergeArcs<'a> {
             polygons: vec![],
             polygons_by_arc: BTreeMap::new(),
             groups: vec![],
-            topology: topology,
+            topology,
         }
     }
 
@@ -181,7 +181,7 @@ impl<'a> MergeArcs<'a> {
 
     fn area(&self, ring: ArcIndexes) -> f64 {
         let polygon = Value::Polygon(vec![ring]);
-        let object = FeatureBuilder::generate(self.topology, &polygon);
+        let object = feature(self.topology, &polygon);
         match object {
             Geometry::Polygon(p) => planar_ring_area(&p.exterior().0),
             _ => {
