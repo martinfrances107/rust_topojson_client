@@ -26,9 +26,95 @@ where
     area.abs() // Note: doubled area!
 }
 
-/// todo
-#[derive(Clone, Debug)]
-pub struct MergeArcs<'a> {
+/// Given a topology and list of objects, merge the selected objected together, translate and output
+/// a resulting object as geo_types::Geometry object.
+pub fn merge<T>(topology: &Topology, objects: &[NamedGeometry]) -> Geometry<T>
+where
+    T: CoordFloat + Debug,
+{
+    let mut ma = MergeArcs::new(topology);
+
+    objects.iter().for_each(|o| ma.geometry(&o.geometry));
+
+    ma.polygons.clone().iter().for_each(|polygon| {
+        if polygon.borrow().is_not_marked() {
+            let mut group: Vec<PolygonU> = vec![];
+
+            polygon.borrow_mut().mark();
+
+            let mut neighbors = vec![polygon];
+
+            // Iterate over neighbors while conditionally pushing to the tail.
+            while let Some(polygon) = neighbors.pop() {
+                group.push(polygon.borrow().clone());
+                polygon.borrow().v.iter().for_each(|ring| {
+                    ring.iter().for_each(|arc| {
+                        let index = translate(*arc);
+                        ma.polygons_by_arc[&index].iter().for_each(|polygon| {
+                            if polygon.borrow().is_not_marked() {
+                                polygon.borrow_mut().mark();
+                                neighbors.push(polygon);
+                            }
+                        });
+                    });
+                });
+            }
+            ma.groups.push(group);
+        }
+    });
+
+    ma.polygons
+        .iter_mut()
+        .for_each(|polygon| polygon.borrow_mut().unmark());
+
+    // Extract the exterior (unique) arcs.
+    let polygon_arcs = ma
+        .groups
+        .iter()
+        .map(|polygons| {
+            // todo can I use with_capacity() here.
+            let mut arcs = Vec::new();
+            polygons.iter().for_each(|polygon| {
+                polygon.v.iter().for_each(|ring| {
+                    ring.iter().for_each(|arc| {
+                        let index = translate(*arc);
+                        if ma.polygons_by_arc[&index].len() < 2 {
+                            arcs.push(*arc);
+                        }
+                    });
+                });
+            });
+
+            // Stich the arc into one or more rings.
+            let mut arcs = stitch(topology, arcs);
+            // If more than one ring is returned, at most one of these
+            // rings can be the exterior; choose the one with the
+            // greatest absolute area.
+            let n = arcs.len();
+            if n > 1 {
+                let mut iter_mut = arcs.iter_mut();
+                let mut k = ma.area(iter_mut.next().unwrap().to_vec());
+                let mut ki;
+                for i in 1..arcs.len() {
+                    ki = ma.area(arcs[i].to_vec());
+                    if ki > k {
+                        arcs.swap(0, i);
+                        k = ki;
+                    }
+                }
+            }
+            arcs
+        })
+        .filter(|arcs| !(*arcs).is_empty())
+        .collect();
+    let ma = Value::MultiPolygon(polygon_arcs);
+
+    // let merge_arcs = ma.generate(objects);
+    FeatureBuilder::generate(topology, &ma)
+}
+
+#[derive(Debug)]
+struct MergeArcs<'a> {
     polygons: Vec<Rc<RefCell<PolygonU>>>,
 
     // Rc<RefCell<_>> A Shared refeerence is needed here becuase changes to
@@ -48,92 +134,6 @@ impl<'a> MergeArcs<'a> {
             groups: vec![],
             topology: topology,
         }
-    }
-
-    /// Return merged objects.
-    pub fn merge<T>(topology: &'a Topology, objects: &[NamedGeometry]) -> Geometry<T>
-    where
-        T: CoordFloat + Debug,
-    {
-        let mut ma = Self::new(topology);
-
-        objects.iter().for_each(|o| ma.geometry(&o.geometry));
-
-        ma.polygons.clone().iter().for_each(|polygon| {
-            if polygon.borrow().is_not_marked() {
-                let mut group: Vec<PolygonU> = vec![];
-
-                polygon.borrow_mut().mark();
-
-                let mut neighbors = vec![polygon];
-
-                // Iterate over neighbors while conditionally pushing to the tail.
-                while let Some(polygon) = neighbors.pop() {
-                    group.push(polygon.borrow().clone());
-                    polygon.borrow().v.iter().for_each(|ring| {
-                        ring.iter().for_each(|arc| {
-                            let index = translate(*arc);
-                            ma.polygons_by_arc[&index].iter().for_each(|polygon| {
-                                if polygon.borrow().is_not_marked() {
-                                    polygon.borrow_mut().mark();
-                                    neighbors.push(polygon);
-                                }
-                            });
-                        });
-                    });
-                }
-                ma.groups.push(group);
-            }
-        });
-
-        ma.polygons
-            .iter_mut()
-            .for_each(|polygon| polygon.borrow_mut().unmark());
-
-        // Extract the exterior (unique) arcs.
-        let polygon_arcs = ma
-            .groups
-            .iter()
-            .map(|polygons| {
-                // todo can I use with_capacity() here.
-                let mut arcs = Vec::new();
-                polygons.iter().for_each(|polygon| {
-                    polygon.v.iter().for_each(|ring| {
-                        ring.iter().for_each(|arc| {
-                            let index = translate(*arc);
-                            if ma.polygons_by_arc[&index].len() < 2 {
-                                arcs.push(*arc);
-                            }
-                        });
-                    });
-                });
-
-                // Stich the arc into one or more rings.
-                let mut arcs = stitch(topology, arcs);
-                // If more than one ring is returned, at most one of these
-                // rings can be the exterior; choose the one with the
-                // greatest absolute area.
-                let n = arcs.len();
-                if n > 1 {
-                    let mut iter_mut = arcs.iter_mut();
-                    let mut k = ma.area(iter_mut.next().unwrap().to_vec());
-                    let mut ki;
-                    for i in 1..arcs.len() {
-                        ki = ma.area(arcs[i].to_vec());
-                        if ki > k {
-                            arcs.swap(0, i);
-                            k = ki;
-                        }
-                    }
-                }
-                arcs
-            })
-            .filter(|arcs| !(*arcs).is_empty())
-            .collect();
-        let ma = Value::MultiPolygon(polygon_arcs);
-
-        // let merge_arcs = ma.generate(objects);
-        FeatureBuilder::generate(topology, &ma)
     }
 
     // Proces collections of items - 'extract'ing all sub items.
@@ -195,7 +195,6 @@ impl<'a> MergeArcs<'a> {
 #[cfg(test)]
 mod merge_tests {
     use geo::Geometry;
-    use geo::GeometryCollection;
     use geo::LineString;
     use geo::MultiPolygon;
     use geo::Polygon;
@@ -204,7 +203,7 @@ mod merge_tests {
     use topojson::Topology;
     use topojson::Value;
 
-    use crate::merge::MergeArcs;
+    use crate::merge::merge;
 
     #[test]
     fn merge_ignores_null_geometries() {
@@ -218,7 +217,7 @@ mod merge_tests {
         };
         let mp = Geometry::MultiPolygon(MultiPolygon::<f64>(vec![]));
 
-        assert_eq!(MergeArcs::merge(&topology, &mut vec![]), mp);
+        assert_eq!(merge(&topology, &mut vec![]), mp);
     }
 
     //
@@ -276,7 +275,7 @@ mod merge_tests {
         let exterior: LineString<f64> = coords.into_iter().collect();
         let mp = Geometry::MultiPolygon(MultiPolygon(vec![Polygon::new(exterior, vec![])]));
 
-        assert_eq!(MergeArcs::merge(&topology, &objects), mp);
+        assert_eq!(merge(&topology, &objects), mp);
     }
 
     //
@@ -335,7 +334,7 @@ mod merge_tests {
         let exterior: LineString<f64> = coords.into_iter().collect();
         let mp = Geometry::MultiPolygon(MultiPolygon(vec![Polygon::new(exterior, vec![])]));
 
-        assert_eq!(MergeArcs::merge(&topology, &objects), mp);
+        assert_eq!(merge(&topology, &objects), mp);
     }
 
     #[test]
@@ -396,7 +395,7 @@ mod merge_tests {
             Polygon::new(exterior2, vec![]),
         ]));
 
-        assert_eq!(MergeArcs::merge(&topology, &objects), mp);
+        assert_eq!(merge(&topology, &objects), mp);
     }
 
     //   //
@@ -463,7 +462,7 @@ mod merge_tests {
         );
         let mp = Geometry::MultiPolygon(MultiPolygon::new(vec![p1]));
 
-        assert_eq!(MergeArcs::merge(&topology, &objects), mp);
+        assert_eq!(merge(&topology, &objects), mp);
     }
     //
     // +-----------+            +-----------+
@@ -523,7 +522,7 @@ mod merge_tests {
         );
         let mp = Geometry::MultiPolygon(MultiPolygon::new(vec![p1]));
 
-        assert_eq!(MergeArcs::merge(&topology, &objects), mp);
+        assert_eq!(merge(&topology, &objects), mp);
     }
 
     //
@@ -602,7 +601,7 @@ mod merge_tests {
         );
         let mp = Geometry::MultiPolygon(MultiPolygon::new(vec![p1]));
 
-        assert_eq!(MergeArcs::merge(&topology, &objects), mp);
+        assert_eq!(merge(&topology, &objects), mp);
     }
 
     //
@@ -685,7 +684,7 @@ mod merge_tests {
         );
         let mp = Geometry::MultiPolygon(MultiPolygon::new(vec![p1]));
 
-        assert_eq!(MergeArcs::merge(&topology, &objects), mp);
+        assert_eq!(merge(&topology, &objects), mp);
     }
 
     //   //
@@ -764,6 +763,6 @@ mod merge_tests {
         );
         let mp = Geometry::MultiPolygon(MultiPolygon::new(vec![p1]));
 
-        assert_eq!(MergeArcs::merge(&topology, &objects), mp);
+        assert_eq!(merge(&topology, &objects), mp);
     }
 }
