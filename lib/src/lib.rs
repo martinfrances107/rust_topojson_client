@@ -26,6 +26,7 @@ pub mod feature;
 pub mod neighbors;
 
 mod merge;
+mod mesh;
 mod polygon_u;
 /// function reverse() and unit tests.
 mod reverse;

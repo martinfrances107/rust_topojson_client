@@ -10,21 +10,34 @@ The feature extraction section of this library has been ported as is being used 
 
 ## CURRENT FOCUS
 
-* Test coverage of merge.rs and switch.rs comes from merge-test
-* Developing the binaries and getting topo2geo-test and topoquantize-test to pass.
+* Implementing mesh.js and mesh-test.js, which will improve the code covergae in stitch.rs
 
+* Next,  the three binaries
+
+  * topo2geo -106 lines to port
+  * topomerge - 216 to port
+  * topoquantize - 75 to port
+  
+  <br>
+  Plus associated tests, developing topo2geo-test and topoquantize-test 
 ## TEST STATUS
 
-  | Tests             | Status            |
-  | ----------------- | ----------------- |
-  | feature-test      | tests complete    |
-  | neigbor-test      | complete          |
-  | merge-test        | tests incomplete  |
-  | stich-test        | Module needs work |
-  | topo2geo-test     | Missing           |
-  | topoquantize-test | Missing           |
-  | transform-test    | complete          |
-  | untransform-test  | Module is missing |
+  | Tests             | Status            | Comments                        |
+  | ----------------- | ----------------- | ------------------------------- |
+  | bbox-test         | Complete          |                                 |
+  | feature-test      | Complete          |                                 |
+  | neigbor-test      | Complete          |                                 |
+  | merge-test*       | Complete          |                                 |
+  | mesh-test         | Missing code      |                                 |
+  | neighbours-test   | Complete          | 53 lines of code to port        |
+  | quantize-test     |                   | 50 lines of javascript to port. |
+  | topo2geo-test     | Missing           |                                 |
+  | topoquantize-test | Missing           |                                 |
+  | transform-test    | Complete          |                                 |
+  | untransform-test  | Module is missing |                                 |
+
+* merge-tests also act as a test of stitch.rs, although to a limited extent ( code coverage of stitch.rs is 58% ).
+implementing mesh-test will increase code coverage.
 
 ## New integration tests
 
