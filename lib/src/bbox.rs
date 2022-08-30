@@ -1,7 +1,41 @@
 use crate::transform::gen_transform;
 use topojson::{NamedGeometry, Topology, Value};
 
-pub struct BBox {
+fn bbox(topology: &Topology) -> [f64; 4] {
+    let mut state = BBox {
+        t: gen_transform(&topology.transform),
+        x0: f64::INFINITY,
+        y0: f64::INFINITY,
+        x1: f64::NEG_INFINITY,
+        y1: f64::NEG_INFINITY,
+    };
+
+    for arc in &topology.arcs {
+        for (i, a) in arc.iter().enumerate() {
+            let p = (state.t)(a, i);
+            if p[0] < state.x0 {
+                state.x0 = p[0];
+            }
+            if p[0] > state.x1 {
+                state.x1 = p[0];
+            }
+            if p[1] < state.y0 {
+                state.y0 = p[1];
+            }
+            if p[1] > state.y1 {
+                state.y1 = p[1];
+            }
+        }
+    }
+
+    for key in &topology.objects {
+        state.bbox_geometry(key)
+    }
+
+    [state.x0, state.y0, state.x1, state.y1]
+}
+
+struct BBox {
     t: Box<dyn FnMut(&[f64], usize) -> Vec<f64>>,
     x0: f64,
     y0: f64,
@@ -10,41 +44,6 @@ pub struct BBox {
 }
 
 impl BBox {
-    #[inline]
-    pub fn calc(topology: &Topology) -> [f64; 4] {
-        let mut state = BBox {
-            t: gen_transform(&topology.transform),
-            x0: f64::INFINITY,
-            y0: f64::INFINITY,
-            x1: f64::NEG_INFINITY,
-            y1: f64::NEG_INFINITY,
-        };
-
-        for arc in &topology.arcs {
-            for (i, a) in arc.iter().enumerate() {
-                let p = (state.t)(a, i);
-                if p[0] < state.x0 {
-                    state.x0 = p[0];
-                }
-                if p[0] > state.x1 {
-                    state.x1 = p[0];
-                }
-                if p[1] < state.y0 {
-                    state.y0 = p[1];
-                }
-                if p[1] > state.y1 {
-                    state.y1 = p[1];
-                }
-            }
-        }
-
-        for key in &topology.objects {
-            state.bbox_geometry(key)
-        }
-
-        [state.x0, state.y0, state.x1, state.y1]
-    }
-
     fn bbox_point(&mut self, p: &[f64]) {
         let p = (self.t)(p, 0);
         if p[0] < self.x0 {
@@ -92,18 +91,19 @@ mod bbox_tests {
     use std::env;
     use std::fs::File;
     use std::io::Read;
-    extern crate serde;
+
     use pretty_assertions::assert_eq;
     use topojson::Topology;
 
-    use super::BBox;
+    use super::*;
+    extern crate serde;
 
     #[test]
     fn ignores_the_exiting_bbox() {
         println!("topojson.bbox(topology) ignores the existing bbox, if any");
 
         assert_eq!(
-            BBox::calc(&Topology {
+            bbox(&Topology {
                 arcs: vec![],
                 objects: vec![],
                 bbox: Some(vec![1_f64, 2_f64, 3_f64, 4_f64]),
@@ -129,7 +129,7 @@ mod bbox_tests {
             .expect("Did not read file correctly.");
 
         let topology: Topology = serde_json::from_str(&data).expect("Did not parse correcly.");
-        assert_eq!(BBox::calc(&topology), [0_f64, 0_f64, 10_f64, 10_f64]);
+        assert_eq!(bbox(&topology), [0_f64, 0_f64, 10_f64, 10_f64]);
     }
 
     #[test]
@@ -144,7 +144,7 @@ mod bbox_tests {
             .expect("Did not read file correctly.");
 
         let topology: Topology = serde_json::from_str(&data).expect("Did not parse correcly.");
-        assert_eq!(BBox::calc(&topology), [0_f64, 0_f64, 10_f64, 10_f64]);
+        assert_eq!(bbox(&topology), [0_f64, 0_f64, 10_f64, 10_f64]);
     }
 
     #[test]
@@ -157,7 +157,7 @@ mod bbox_tests {
             .expect("did not read file correctly.");
 
         let topology: Topology = serde_json::from_str(&data).expect("Did not parse correcly.");
-        assert_eq!(BBox::calc(&topology), [0_f64, 0_f64, 10_f64, 10_f64]);
+        assert_eq!(bbox(&topology), [0_f64, 0_f64, 10_f64, 10_f64]);
     }
 
     #[test]
@@ -174,6 +174,6 @@ mod bbox_tests {
             .expect("did not read file correctly.");
 
         let topology: Topology = serde_json::from_str(&data).expect("Did not parse correcly.");
-        assert_eq!(BBox::calc(&topology), [0_f64, 0_f64, 10_f64, 10_f64]);
+        assert_eq!(bbox(&topology), [0_f64, 0_f64, 10_f64, 10_f64]);
     }
 }
