@@ -5,17 +5,17 @@ version = "0.1.0"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-geo = "0.22.0"
+geo = "0.23.0"
 topojson = "0.5.0"
-derivative ="2.2.0"
+derivative = "2.2.0"
 
 [dev-dependencies]
 pretty_assertions = "1.0.0"
-criterion = "0.3"
+criterion = "0.4"
 serde_json = "1.0.69"
-serde="1.0"
+serde = "1.0"
 
 
 [[bench]]
 name = "world"
-harness= false
+harness = false
