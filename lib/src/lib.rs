@@ -1,4 +1,4 @@
-#![warn(missing_docs)]
+// #![warn(missing_docs)]
 #![warn(missing_debug_implementations)]
 #![allow(clippy::many_single_char_names)]
 //! A port of [topojson/topojson-client](<https://github.com/topojson/topojson-client>).
@@ -25,6 +25,7 @@ pub mod feature;
 /// Identifies neighbors in geometry.
 pub mod neighbors;
 
+mod feature_geo_type;
 mod merge;
 mod mesh;
 mod polygon_u;

@@ -31,7 +31,7 @@ mod world_test {
                         assert_eq!(mp.0.len(), 1428_usize);
                     }
                     _ => {
-                        assert!(false, "Failed to decode Multipoloygon")
+                        assert!(false, "Failed to decode Multipolygon")
                     }
                 }
             }

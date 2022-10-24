@@ -3,7 +3,8 @@ use std::collections::BTreeMap;
 use geo::MultiLineString;
 use topojson::{ArcIndexes, Geometry, Topology, Value};
 
-use crate::{stitch::stitch, translate};
+use crate::stitch::stitch;
+use crate::translate;
 
 fn mesh_arcs(topology: &Topology) -> topojson::Geometry {
     let n = topology.arcs.len();
@@ -13,10 +14,10 @@ fn mesh_arcs(topology: &Topology) -> topojson::Geometry {
         *a = i as i32;
     }
 
-    topojson::Geometry::new(Value::MultiLineString(stitch(&topology, arcs)))
+    topojson::Geometry::new(Value::MultiLineString(stitch(topology, arcs)))
 }
 
-fn mesh_arcs_with_oebject_and_filter(
+fn mesh_arcs_with_object_and_filter(
     topology: &Topology,
     object: &topojson::Geometry,
     filter: (),
@@ -25,24 +26,14 @@ fn mesh_arcs_with_oebject_and_filter(
     // topojson::Geometry::new(Value::MultiLineString(stitch(&topology, arcs)))
     todo!();
 }
-
+#[derive(Default)]
 struct ExtractArcs {
     arcs: Vec<ArcIndexes>,
     geom: Option<Geometry>,
-    geosmsByArc: BTreeMap<usize, ArcIndexes>,
-    filter: Option<Box<dyn Fn() -> ()>>,
+    geosms_by_arc: BTreeMap<usize, ArcIndexes>,
+    filter: Option<Box<dyn Fn()>>,
 }
 
-impl Default for ExtractArcs {
-    fn default() -> Self {
-        Self {
-            arcs: vec![],
-            geom: None,
-            geosmsByArc: BTreeMap::new(),
-            filter: None,
-        }
-    }
-}
 impl ExtractArcs {
     fn extract0(&self, i: i32) {
         let j = translate(i);
@@ -52,11 +43,11 @@ impl ExtractArcs {
         arcs.iter().for_each(|arc| self.extract0(*arc))
     }
 
-    fn extract2(&self, arcs: &Vec<ArcIndexes>) {
+    fn extract2(&self, arcs: &[ArcIndexes]) {
         arcs.iter().for_each(|arc| self.extract1(arc))
     }
 
-    fn extract3(&self, arcs: &Vec<Vec<ArcIndexes>>) {
+    fn extract3(&self, arcs: &[Vec<ArcIndexes>]) {
         arcs.iter().for_each(|arc| self.extract2(arc))
     }
 
@@ -83,7 +74,7 @@ impl ExtractArcs {
     ) -> Vec<ArcIndexes> {
         self.geometry(object);
 
-        self.geosmsByArc
+        self.geosms_by_arc
             .iter()
             .for_each(|geoms| match &self.filter {
                 Some(fun) => {

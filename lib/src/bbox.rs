@@ -1,5 +1,7 @@
-use crate::transform::gen_transform;
 use topojson::{NamedGeometry, Topology, Value};
+
+use crate::transform::gen_transform;
+use crate::transform::Transform;
 
 fn bbox(topology: &Topology) -> [f64; 4] {
     let mut state = BBox {
@@ -36,7 +38,7 @@ fn bbox(topology: &Topology) -> [f64; 4] {
 }
 
 struct BBox {
-    t: Box<dyn FnMut(&[f64], usize) -> Vec<f64>>,
+    t: Transform,
     x0: f64,
     y0: f64,
     x1: f64,

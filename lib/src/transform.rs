@@ -1,9 +1,10 @@
 use topojson::TransformParams;
 
+pub type Transform = Box<dyn FnMut(&[f64], usize) -> Vec<f64>>;
 /// Return a transform function base on the transform paramters.
 ///
 /// When the transform parameters are undefined return an identity transform.
-pub fn gen_transform(tp: &Option<TransformParams>) -> Box<dyn FnMut(&[f64], usize) -> Vec<f64>> {
+pub fn gen_transform(tp: &Option<TransformParams>) -> Transform {
     match tp {
         None => Box::new(|input: &[f64], _: usize| -> Vec<f64> { Vec::from(input) }),
         Some(tp) => {
