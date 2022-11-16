@@ -220,13 +220,13 @@ mod merge_tests {
         assert_eq!(merge(&topology, &mut vec![]), mp);
     }
 
-    //
-    // +----+----+            +----+----+
-    // |    |    |            |         |
-    // |    |    |    ==>     |         |
-    // |    |    |            |         |
-    // +----+----+            +----+----+
-    //
+    ///
+    /// +----+----+            +----+----+
+    /// |    |    |            |         |
+    /// |    |    |    ==>     |         |
+    /// |    |    |            |         |
+    /// +----+----+            +----+----+
+    ///
     #[test]
     fn stitches_together_two_side_by_side_polygons() {
         println!("merge stitches together two side-by-side polygons");

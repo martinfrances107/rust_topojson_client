@@ -25,7 +25,7 @@ fn main() -> io::Result<()> {
                 .long("in")
                 .value_name("FILE")
                 .help("input topology file name; defaults to “-” for stdin")
-                .takes_value(true)
+                .num_args(1)
                 .required(false),
         )
         .arg(
@@ -39,14 +39,13 @@ fn main() -> io::Result<()> {
             Arg::new("NEWLINE")
                 .short('n')
                 .long("newline-delimited")
-                // .multiple(true)
                 .help("output newline-delimted JSON"),
         )
         .get_matches();
 
-    let filename = matches.value_of("INPUT");
+    let filename = matches.get_one::<String>("INPUT");
 
-    let topo = read(filename)?;
+    let topo = read(filename.map(|x| &**x))?;
 
     if matches.contains_id("LIST") {
         write_list(&topo);
