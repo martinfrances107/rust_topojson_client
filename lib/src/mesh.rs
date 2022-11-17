@@ -1,6 +1,5 @@
 use std::collections::BTreeMap;
 
-use geo::MultiLineString;
 use topojson::{ArcIndexes, Geometry, Topology, Value};
 
 use crate::stitch::stitch;

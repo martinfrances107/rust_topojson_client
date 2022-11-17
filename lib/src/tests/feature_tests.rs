@@ -3,7 +3,6 @@
 mod feature_tests {
 
     use super::*;
-    use geo::Coordinate;
     use geo::Geometry;
     use geo::GeometryCollection;
     use geo::LineString;
@@ -11,6 +10,7 @@ mod feature_tests {
     use geo::MultiPolygon;
     use geo::Point;
     use geo::Polygon;
+    use geo_types::Coord;
     use pretty_assertions::assert_eq;
     use topojson::NamedGeometry;
     use topojson::TransformParams;
@@ -21,7 +21,7 @@ mod feature_tests {
         println!("topojson.feature the geometry type is preserved");
         let t = simple_topology(topojson::Geometry::new(Value::Polygon(vec![vec![0]])));
 
-        match feature_from_name::<f64>(&t, &"foo") {
+        match feature_from_name::<f64>(&t, "foo") {
             Some(g) => match g {
                 Geometry::Polygon(_) => {
                     assert!(true, "Must produce polygon");
@@ -42,8 +42,8 @@ mod feature_tests {
         let t = simple_topology(topojson::Geometry::new(Value::Point(vec![0_f64, 0_f64])));
 
         assert_eq!(
-            feature_from_name(&t, &"foo"),
-            Some(Geometry::Point(Point(Coordinate { x: 0_f64, y: 0_f64 })))
+            feature_from_name(&t, "foo"),
+            Some(Geometry::Point(Point(Coord { x: 0_f64, y: 0_f64 })))
         );
     }
 
@@ -56,10 +56,10 @@ mod feature_tests {
         ])));
 
         assert_eq!(
-            feature_from_name(&t, &"foo"),
+            feature_from_name(&t, "foo"),
             Some(Geometry::MultiPoint(MultiPoint(vec![
-                Point(Coordinate { x: 0_f64, y: 0_f64 }),
-                Point(Coordinate {
+                Point(Coord { x: 0_f64, y: 0_f64 }),
+                Point(Coord {
                     x: 0xf0 as f64,
                     y: 0xba as f64
                 })
@@ -74,13 +74,13 @@ mod feature_tests {
         let t = simple_topology(topojson::Geometry::new(Value::LineString(vec![0])));
 
         assert_eq!(
-            feature_from_name(&t, &"foo"),
+            feature_from_name(&t, "foo"),
             Some(Geometry::LineString(LineString(vec![
-                Coordinate { x: 0_f64, y: 0_f64 },
-                Coordinate { x: 1_f64, y: 0_f64 },
-                Coordinate { x: 1_f64, y: 1_f64 },
-                Coordinate { x: 0_f64, y: 1_f64 },
-                Coordinate { x: 0_f64, y: 0_f64 },
+                Coord { x: 0_f64, y: 0_f64 },
+                Coord { x: 1_f64, y: 0_f64 },
+                Coord { x: 1_f64, y: 1_f64 },
+                Coord { x: 0_f64, y: 1_f64 },
+                Coord { x: 0_f64, y: 0_f64 },
             ])))
         );
     }
@@ -93,14 +93,14 @@ mod feature_tests {
         ]])));
 
         assert_eq!(
-            feature_from_name(&t, &"foo"),
+            feature_from_name(&t, "foo"),
             Some(Geometry::MultiLineString(MultiLineString(vec![
                 LineString(vec![
-                    Coordinate { x: 0_f64, y: 0_f64 },
-                    Coordinate { x: 1_f64, y: 0_f64 },
-                    Coordinate { x: 1_f64, y: 1_f64 },
-                    Coordinate { x: 0_f64, y: 1_f64 },
-                    Coordinate { x: 0_f64, y: 0_f64 },
+                    Coord { x: 0_f64, y: 0_f64 },
+                    Coord { x: 1_f64, y: 0_f64 },
+                    Coord { x: 1_f64, y: 1_f64 },
+                    Coord { x: 0_f64, y: 1_f64 },
+                    Coord { x: 0_f64, y: 0_f64 },
                 ])
             ])))
         );
@@ -112,10 +112,10 @@ mod feature_tests {
         let t1 = simple_topology(topojson::Geometry::new(Value::LineString(vec![3])));
 
         assert_eq!(
-            feature_from_name(&t1, &"foo"),
+            feature_from_name(&t1, "foo"),
             Some(Geometry::LineString(LineString(vec![
-                Coordinate { x: 1_f64, y: 1_f64 },
-                Coordinate { x: 1_f64, y: 1_f64 },
+                Coord { x: 1_f64, y: 1_f64 },
+                Coord { x: 1_f64, y: 1_f64 },
             ])))
         );
 
@@ -125,15 +125,15 @@ mod feature_tests {
         ])));
 
         assert_eq!(
-            feature_from_name(&t2, &"foo"),
+            feature_from_name(&t2, "foo"),
             Some(Geometry::MultiLineString(MultiLineString(vec![
                 LineString(vec![
-                    Coordinate { x: 1_f64, y: 1_f64 },
-                    Coordinate { x: 1_f64, y: 1_f64 },
+                    Coord { x: 1_f64, y: 1_f64 },
+                    Coord { x: 1_f64, y: 1_f64 },
                 ]),
                 LineString(vec![
-                    Coordinate { x: 0_f64, y: 0_f64 },
-                    Coordinate { x: 0_f64, y: 0_f64 },
+                    Coord { x: 0_f64, y: 0_f64 },
+                    Coord { x: 0_f64, y: 0_f64 },
                 ]),
             ])))
         );
@@ -145,14 +145,14 @@ mod feature_tests {
         let t = simple_topology(topojson::Geometry::new(Value::Polygon(vec![vec![0]])));
 
         assert_eq!(
-            feature_from_name(&t, &"foo"),
+            feature_from_name(&t, "foo"),
             Some(Geometry::Polygon(Polygon::new(
                 LineString(vec![
-                    Coordinate { x: 0_f64, y: 0_f64 },
-                    Coordinate { x: 1_f64, y: 0_f64 },
-                    Coordinate { x: 1_f64, y: 1_f64 },
-                    Coordinate { x: 0_f64, y: 1_f64 },
-                    Coordinate { x: 0_f64, y: 0_f64 },
+                    Coord { x: 0_f64, y: 0_f64 },
+                    Coord { x: 1_f64, y: 0_f64 },
+                    Coord { x: 1_f64, y: 1_f64 },
+                    Coord { x: 0_f64, y: 1_f64 },
+                    Coord { x: 0_f64, y: 0_f64 },
                 ]),
                 vec![]
             )))
@@ -167,14 +167,14 @@ mod feature_tests {
         ]])));
 
         assert_eq!(
-            feature_from_name(&t, &"foo"),
+            feature_from_name(&t, "foo"),
             Some(Geometry::MultiPolygon(MultiPolygon(vec![Polygon::new(
                 LineString(vec![
-                    Coordinate { x: 0_f64, y: 0_f64 },
-                    Coordinate { x: 1_f64, y: 0_f64 },
-                    Coordinate { x: 1_f64, y: 1_f64 },
-                    Coordinate { x: 0_f64, y: 1_f64 },
-                    Coordinate { x: 0_f64, y: 0_f64 },
+                    Coord { x: 0_f64, y: 0_f64 },
+                    Coord { x: 1_f64, y: 0_f64 },
+                    Coord { x: 1_f64, y: 1_f64 },
+                    Coord { x: 0_f64, y: 1_f64 },
+                    Coord { x: 0_f64, y: 0_f64 },
                 ]),
                 vec![]
             )])))
@@ -208,13 +208,13 @@ mod feature_tests {
         };
 
         assert_eq!(
-            feature_from_name(&topology, &"foo"),
+            feature_from_name(&topology, "foo"),
             Some(Geometry::Polygon(Polygon::new(
                 LineString(vec![
-                    Coordinate { x: 0_f64, y: 0_f64 },
-                    Coordinate { x: 1_f64, y: 1_f64 },
-                    Coordinate { x: 0_f64, y: 0_f64 },
-                    Coordinate { x: 0_f64, y: 0_f64 }
+                    Coord { x: 0_f64, y: 0_f64 },
+                    Coord { x: 1_f64, y: 1_f64 },
+                    Coord { x: 0_f64, y: 0_f64 },
+                    Coord { x: 0_f64, y: 0_f64 }
                 ]),
                 vec![]
             )))
@@ -224,10 +224,10 @@ mod feature_tests {
             feature_from_name(&topology, &"bar"),
             Some(Geometry::Polygon(Polygon::new(
                 LineString(vec![
-                    Coordinate { x: 0_f64, y: 0_f64 },
-                    Coordinate { x: 1_f64, y: 1_f64 },
-                    Coordinate { x: 0_f64, y: 0_f64 },
-                    Coordinate { x: 0_f64, y: 0_f64 }
+                    Coord { x: 0_f64, y: 0_f64 },
+                    Coord { x: 1_f64, y: 1_f64 },
+                    Coord { x: 0_f64, y: 0_f64 },
+                    Coord { x: 0_f64, y: 0_f64 }
                 ]),
                 vec![]
             )))
@@ -245,15 +245,15 @@ mod feature_tests {
         ])));
 
         assert_eq!(
-            feature_from_name(&t, &"foo"),
+            feature_from_name(&t, "foo"),
             Some(Geometry::GeometryCollection(GeometryCollection(vec![
                 Geometry::MultiPolygon(MultiPolygon(vec![Polygon::new(
                     LineString(vec![
-                        Coordinate { x: 0.0, y: 0.0 },
-                        Coordinate { x: 1.0, y: 0.0 },
-                        Coordinate { x: 1.0, y: 1.0 },
-                        Coordinate { x: 0.0, y: 1.0 },
-                        Coordinate { x: 0.0, y: 0.0 },
+                        Coord { x: 0.0, y: 0.0 },
+                        Coord { x: 1.0, y: 0.0 },
+                        Coord { x: 1.0, y: 1.0 },
+                        Coord { x: 0.0, y: 1.0 },
+                        Coord { x: 0.0, y: 0.0 },
                     ]),
                     vec![]
                 )]))
@@ -272,10 +272,10 @@ mod feature_tests {
         ])));
 
         assert_eq!(
-            feature_from_name(&t, &"foo"),
+            feature_from_name(&t, "foo"),
             Some(Geometry::GeometryCollection(GeometryCollection(vec![
                 Geometry::GeometryCollection(GeometryCollection(vec![Geometry::Point(Point(
-                    Coordinate { x: 0_f64, y: 0_f64 }
+                    Coord { x: 0_f64, y: 0_f64 }
                 ))]))
             ])))
         );
@@ -322,14 +322,14 @@ mod feature_tests {
         println!("topojson.feature arcs are converted to coordinates");
         let t = simple_topology(topojson::Geometry::new(Value::Polygon(vec![vec![0_i32]])));
         assert_eq!(
-            feature_from_name(&t, &"foo"),
+            feature_from_name(&t, "foo"),
             Some(Geometry::Polygon(Polygon::new(
                 LineString(vec![
-                    Coordinate { x: 0_f64, y: 0_f64 },
-                    Coordinate { x: 1_f64, y: 0_f64 },
-                    Coordinate { x: 1_f64, y: 1_f64 },
-                    Coordinate { x: 0_f64, y: 1_f64 },
-                    Coordinate { x: 0_f64, y: 0_f64 },
+                    Coord { x: 0_f64, y: 0_f64 },
+                    Coord { x: 1_f64, y: 0_f64 },
+                    Coord { x: 1_f64, y: 1_f64 },
+                    Coord { x: 0_f64, y: 1_f64 },
+                    Coord { x: 0_f64, y: 0_f64 },
                 ]),
                 vec![]
             )))
@@ -341,14 +341,14 @@ mod feature_tests {
         println!("topojson.feature negative arc indexes indicate reversed coordinates");
         let t = simple_topology(topojson::Geometry::new(Value::Polygon(vec![vec![!0_i32]])));
         assert_eq!(
-            feature_from_name(&t, &"foo"),
+            feature_from_name(&t, "foo"),
             Some(Geometry::Polygon(Polygon::new(
                 LineString(vec![
-                    Coordinate { x: 0_f64, y: 0_f64 },
-                    Coordinate { x: 0_f64, y: 1_f64 },
-                    Coordinate { x: 1_f64, y: 1_f64 },
-                    Coordinate { x: 1_f64, y: 0_f64 },
-                    Coordinate { x: 0_f64, y: 0_f64 },
+                    Coord { x: 0_f64, y: 0_f64 },
+                    Coord { x: 0_f64, y: 1_f64 },
+                    Coord { x: 1_f64, y: 1_f64 },
+                    Coord { x: 1_f64, y: 0_f64 },
+                    Coord { x: 0_f64, y: 0_f64 },
                 ]),
                 vec![]
             )))
@@ -362,14 +362,14 @@ mod feature_tests {
             1_i32, 2_i32,
         ]])));
         assert_eq!(
-            feature_from_name(&t1, &"foo"),
+            feature_from_name(&t1, "foo"),
             Some(Geometry::Polygon(Polygon::new(
                 LineString(vec![
-                    Coordinate { x: 0_f64, y: 0_f64 },
-                    Coordinate { x: 1_f64, y: 0_f64 },
-                    Coordinate { x: 1_f64, y: 1_f64 },
-                    Coordinate { x: 0_f64, y: 1_f64 },
-                    Coordinate { x: 0_f64, y: 0_f64 },
+                    Coord { x: 0_f64, y: 0_f64 },
+                    Coord { x: 1_f64, y: 0_f64 },
+                    Coord { x: 1_f64, y: 1_f64 },
+                    Coord { x: 0_f64, y: 1_f64 },
+                    Coord { x: 0_f64, y: 0_f64 },
                 ]),
                 vec![],
             )))
@@ -379,14 +379,14 @@ mod feature_tests {
             !2_i32, !1_i32,
         ]])));
         assert_eq!(
-            feature_from_name(&t2, &"foo"),
+            feature_from_name(&t2, "foo"),
             Some(Geometry::Polygon(Polygon::new(
                 LineString(vec![
-                    Coordinate { x: 0_f64, y: 0_f64 },
-                    Coordinate { x: 0_f64, y: 1_f64 },
-                    Coordinate { x: 1_f64, y: 1_f64 },
-                    Coordinate { x: 1_f64, y: 0_f64 },
-                    Coordinate { x: 0_f64, y: 0_f64 },
+                    Coord { x: 0_f64, y: 0_f64 },
+                    Coord { x: 0_f64, y: 1_f64 },
+                    Coord { x: 1_f64, y: 1_f64 },
+                    Coord { x: 1_f64, y: 0_f64 },
+                    Coord { x: 0_f64, y: 0_f64 },
                 ]),
                 vec![],
             )))
@@ -427,7 +427,7 @@ mod feature_tests {
             foreign_members: None,
         };
         assert_eq!(
-            feature_from_name(&t, &"foo"),
+            feature_from_name(&t, "foo"),
             Some(Geometry::Point(Point::new(1_f64, 2_f64)))
         );
     }
@@ -446,7 +446,7 @@ mod feature_tests {
             foreign_members: None,
         };
         assert_eq!(
-            feature_from_name(&t, &"foo"),
+            feature_from_name(&t, "foo"),
             Some(Geometry::MultiPoint(MultiPoint(vec![Point::new(
                 1_f64, 2_f64
             )])))
@@ -470,10 +470,10 @@ mod feature_tests {
             foreign_members: None,
         };
         assert_eq!(
-            feature_from_name(&t, &"foo"),
+            feature_from_name(&t, "foo"),
             Some(Geometry::LineString(LineString(vec![
-                Coordinate { x: 1_f64, y: 2_f64 },
-                Coordinate { x: 3_f64, y: 4_f64 }
+                Coord { x: 1_f64, y: 2_f64 },
+                Coord { x: 3_f64, y: 4_f64 }
             ])))
         );
     }

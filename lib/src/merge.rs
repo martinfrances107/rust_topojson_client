@@ -3,7 +3,7 @@ use std::collections::BTreeMap;
 use std::fmt::Debug;
 use std::rc::Rc;
 
-use geo::{CoordFloat, Coordinate, Geometry};
+use geo::{Coord, CoordFloat, Geometry};
 use topojson::{ArcIndexes, NamedGeometry, Topology, Value};
 
 use crate::feature::feature;
@@ -11,12 +11,12 @@ use crate::polygon_u::PolygonU;
 use crate::stitch::stitch;
 use crate::translate;
 
-fn planar_ring_area<T>(ring: &Vec<Coordinate<T>>) -> T
+fn planar_ring_area<T>(ring: &Vec<Coord<T>>) -> T
 where
     T: CoordFloat,
 {
-    let mut a: Coordinate<T>;
-    let mut b: Coordinate<T> = *ring.last().unwrap();
+    let mut a: Coord<T>;
+    let mut b: Coord<T> = *ring.last().unwrap();
     let mut area = T::zero();
     for r in ring {
         a = b;
@@ -159,7 +159,7 @@ impl<'a> MergeArcs<'a> {
     }
 
     /// Loop over the input pushing to internal state.
-    /// polygons_by_arc and polygons.    
+    /// polygons_by_arc and polygons.
     fn extract(&mut self, polygon: &[Vec<i32>]) {
         // Value to be stored and refered to .. in pba
         let pu = Rc::new(RefCell::new(PolygonU::new(polygon.to_vec())));
@@ -217,7 +217,7 @@ mod merge_tests {
         };
         let mp = Geometry::MultiPolygon(MultiPolygon::<f64>(vec![]));
 
-        assert_eq!(merge(&topology, &mut vec![]), mp);
+        assert_eq!(merge(&topology, &[]), mp);
     }
 
     ///

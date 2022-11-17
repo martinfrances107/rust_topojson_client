@@ -1,8 +1,7 @@
-use derivative::*;
+use derivative::Derivative;
 
 use geo::line_string;
 use geo::CoordFloat;
-use geo::Coordinate;
 use geo::Geometry;
 use geo::GeometryCollection;
 use geo::LineString;
@@ -11,6 +10,7 @@ use geo::MultiPoint;
 use geo::MultiPolygon;
 use geo::Point;
 use geo::Polygon;
+use geo_types::Coord;
 use topojson::Arc;
 use topojson::ArcIndexes;
 use topojson::Topology;
@@ -154,7 +154,7 @@ impl Builder {
             }
             Value::Point(topo_point) => {
                 let p = self.point(topo_point);
-                Geometry::Point(Point(Coordinate::<T> {
+                Geometry::Point(Point(Coord::<T> {
                     x: T::from(p[0]).unwrap(),
                     y: T::from(p[1]).unwrap(),
                 }))
@@ -164,7 +164,7 @@ impl Builder {
                     .iter()
                     .map(|c| {
                         let p = self.point(c);
-                        Point(Coordinate::<T> {
+                        Point(Coord::<T> {
                             x: T::from(p[0]).unwrap(),
                             y: T::from(p[1]).unwrap(),
                         })
@@ -177,7 +177,7 @@ impl Builder {
                 let line = self.line(topo_ls);
                 let geo_ls: LineString<T> = line
                     .iter()
-                    .map(|p| Coordinate {
+                    .map(|p| Coord {
                         x: T::from(p.0).unwrap(),
                         y: T::from(p.1).unwrap(),
                     })
@@ -191,7 +191,7 @@ impl Builder {
                     .map(|x| self.line(x))
                     .map(|vec| {
                         vec.iter()
-                            .map(|p| Coordinate {
+                            .map(|p| Coord {
                                 x: T::from(p.0).unwrap(),
                                 y: T::from(p.1).unwrap(),
                             })
@@ -207,7 +207,7 @@ impl Builder {
                         let interior = linestring_iter
                             .map(|ls| {
                                 ls.0.iter()
-                                    .map(|p| Coordinate {
+                                    .map(|p| Coord {
                                         x: T::from(p.x).unwrap(),
                                         y: T::from(p.y).unwrap(),
                                     })
@@ -217,7 +217,7 @@ impl Builder {
                         let exterior = exterior
                             .0
                             .iter()
-                            .map(|p| Coordinate {
+                            .map(|p| Coord {
                                 x: T::from(p.x).unwrap(),
                                 y: T::from(p.y).unwrap(),
                             })
@@ -237,7 +237,7 @@ impl Builder {
                                 let exterior = exterior
                                     .0
                                     .iter()
-                                    .map(|p| Coordinate {
+                                    .map(|p| Coord {
                                         x: T::from(p.x).unwrap(),
                                         y: T::from(p.y).unwrap(),
                                     })
@@ -245,7 +245,7 @@ impl Builder {
                                 let interior = linestring_iter
                                     .map(|ls| {
                                         ls.0.iter()
-                                            .map(|p| Coordinate {
+                                            .map(|p| Coord {
                                                 x: T::from(p.x).unwrap(),
                                                 y: T::from(p.y).unwrap(),
                                             })

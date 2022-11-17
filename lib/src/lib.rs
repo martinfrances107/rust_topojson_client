@@ -11,6 +11,7 @@
 
 extern crate derivative;
 extern crate geo;
+extern crate geo_types;
 #[cfg(test)]
 extern crate pretty_assertions;
 

@@ -9,6 +9,7 @@ edition = "2021"
 clap = "~4"
 serde_json = "~1.0"
 serde = "~1"
-geo = "~0.23"
+geo = { workspace = true }
+geo-types = { workspcae = true }
 topojson = "~0.5"
 rust_topojson_client = { path = "../lib" }
