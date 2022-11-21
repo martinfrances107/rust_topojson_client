@@ -3,7 +3,7 @@
 #![allow(clippy::many_single_char_names)]
 //! A port of [topojson/topojson-client](<https://github.com/topojson/topojson-client>).
 //!
-//! Manipulate TopoJSON, such as to merge shapes, and convert it back to GeoJSON.
+//! Manipulate TopoJSON objects, for example merging shapes.
 //!
 //! <hr>
 //!

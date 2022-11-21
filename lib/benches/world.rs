@@ -22,7 +22,7 @@ pub fn criterion_benchmark(c: &mut Criterion) {
 
     c.bench_function("world", |b| {
         b.iter(|| {
-            match feature_from_name::<f64>(&topology, &"land") {
+            match feature_from_name::<f64>(&topology, "land") {
                 Some(Geometry::GeometryCollection(GeometryCollection(v_geometry))) => {
                     assert_eq!(v_geometry.len(), 1);
                     match &v_geometry[0] {
