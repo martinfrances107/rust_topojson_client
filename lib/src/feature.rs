@@ -146,11 +146,11 @@ impl Builder {
     {
         match &o {
             Value::GeometryCollection(topo_geometries) => {
-                let geo_geometries: Vec<Geometry<T>> = topo_geometries
+                let geometries: Vec<Geometry<T>> = topo_geometries
                     .iter()
                     .map(|x| self.geometry(&x.value))
                     .collect();
-                Geometry::GeometryCollection(GeometryCollection(geo_geometries))
+                Geometry::GeometryCollection(GeometryCollection(geometries))
             }
             Value::Point(topo_point) => {
                 let p = self.point(topo_point);
@@ -170,23 +170,23 @@ impl Builder {
                         })
                     })
                     .collect();
-                let geo_multipoint = MultiPoint(points);
-                Geometry::MultiPoint(geo_multipoint)
+                let multipoint = MultiPoint(points);
+                Geometry::MultiPoint(multipoint)
             }
             Value::LineString(topo_ls) => {
                 let line = self.line(topo_ls);
-                let geo_ls: LineString<T> = line
+                let ls: LineString<T> = line
                     .iter()
                     .map(|p| Coord {
                         x: T::from(p.0).unwrap(),
                         y: T::from(p.1).unwrap(),
                     })
                     .collect();
-                Geometry::LineString(geo_ls)
+                Geometry::LineString(ls)
             }
 
             Value::MultiLineString(topo_mls) => {
-                let geo_mls: Vec<LineString<T>> = topo_mls
+                let mls: Vec<LineString<T>> = topo_mls
                     .iter()
                     .map(|x| self.line(x))
                     .map(|vec| {
@@ -198,7 +198,7 @@ impl Builder {
                             .collect()
                     })
                     .collect();
-                Geometry::MultiLineString(MultiLineString(geo_mls))
+                Geometry::MultiLineString(MultiLineString(mls))
             }
             Value::Polygon(topo_polygon) => {
                 let mut linestring_iter = self.polygon(topo_polygon);
@@ -228,7 +228,7 @@ impl Builder {
                 }
             }
             Value::MultiPolygon(topo_mp) => {
-                let geo_polygon: Vec<Polygon<T>> = topo_mp
+                let polygon: Vec<Polygon<T>> = topo_mp
                     .iter()
                     .map(|topo_polygon| {
                         let mut linestring_iter = self.polygon(topo_polygon);
@@ -259,7 +259,7 @@ impl Builder {
                     })
                     .collect();
 
-                Geometry::MultiPolygon(MultiPolygon(geo_polygon))
+                Geometry::MultiPolygon(MultiPolygon(polygon))
             }
         }
     }
