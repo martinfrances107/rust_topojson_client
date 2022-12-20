@@ -64,28 +64,28 @@ pub fn neighbors(objects: &mut [NamedGeometry]) -> Vec<ArcIndexes> {
                 let ik = indexes_i[k];
 
                 let n = &mut neighbors[ij as usize];
-                let b = bisect(n, ik as i32);
+                let b = bisect(n, ik);
                 match n.get_mut(b) {
                     Some(n_b) => {
                         if *n_b != ik {
-                            n.insert(b, ik as i32);
+                            n.insert(b, ik);
                         }
                     }
                     None => {
-                        n.insert(b, ik as i32);
+                        n.insert(b, ik);
                     }
                 }
 
                 let n = &mut neighbors[ik as usize];
-                let b = bisect(n, ij as i32);
+                let b = bisect(n, ij);
                 match n.get_mut(b) {
                     Some(n_b) => {
-                        if *n_b != ij as i32 {
-                            n.insert(b, ij as i32);
+                        if *n_b != ij {
+                            n.insert(b, ij);
                         }
                     }
                     None => {
-                        n.insert(b, ij as i32);
+                        n.insert(b, ij);
                     }
                 }
             }
