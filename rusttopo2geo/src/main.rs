@@ -81,9 +81,9 @@ fn write(topo: &Topology) -> io::Result<()> {
     let name = "countries";
 
     let has_object = topo.objects.iter().any(|ng| ng.name == name);
-    println!("has_object {}", has_object);
+    println!("has_object {has_object}");
     if !has_object {
-        panic!("error: object {} not found", name)
+        panic!("error: object {name} not found")
     }
 
     if let Some(feature) = feature_from_name::<f64>(topo, name) {
@@ -106,6 +106,6 @@ where
     handle.write_all(b"hello world")?;
 
     // to_writer(handle, feature);
-    println!("{:#?}", feature);
+    println!("{feature:#?}");
     Ok(())
 }

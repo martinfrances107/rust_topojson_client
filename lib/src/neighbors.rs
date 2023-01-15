@@ -37,7 +37,7 @@ pub fn neighbors(objects: &mut [NamedGeometry]) -> Vec<ArcIndexes> {
                 }
             }
             Value::LineString(l) => {
-                println!("calling from i={}", i);
+                println!("calling from i={i}");
                 line(l, i)
             }
             Value::MultiLineString(p) => polygon(p, i),
