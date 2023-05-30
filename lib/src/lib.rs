@@ -9,7 +9,6 @@
 //!
 //! Repository [rust_topojson_client](<https://github.com/martinfrances107/rust_topojson_client>)
 
-extern crate derivative;
 extern crate geo;
 extern crate geo_types;
 #[cfg(test)]

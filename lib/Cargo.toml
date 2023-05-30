@@ -8,11 +8,10 @@ version = "0.1.0"
 geo = { workspace = true }
 geo-types = { workspace = true }
 topojson = { workspace = true }
-derivative = "~2"
 
 [dev-dependencies]
 pretty_assertions = "~1"
-criterion = "~0.4"
+criterion = "~0.5"
 serde_json = { workspace = true }
 serde = { workspace = true }
 

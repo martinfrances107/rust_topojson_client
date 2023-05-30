@@ -1,5 +1,3 @@
-use derivative::*;
-
 use geo::line_string;
 use geo::Coord;
 use geo::CoordFloat;
@@ -60,12 +58,10 @@ where
     .geometry(o)
 }
 
-#[derive(Derivative)]
-#[derivative(Debug)]
 /// State holds data extracted from a Topological object.
 struct Builder {
     arcs: Vec<Arc>,
-    #[derivative(Debug = "ignore")]
+
     transform: Transform,
 }
 
