@@ -165,7 +165,7 @@ impl Builder {
                         })
                     })
                     .collect();
-                let multipoint = MultiPoint(points);
+                let multipoint: MultiPoint<T> = MultiPoint(points);
                 Geometry::MultiPoint(multipoint)
             }
             Value::LineString(topo_ls) => {
