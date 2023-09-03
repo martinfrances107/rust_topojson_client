@@ -2,6 +2,10 @@
 resolver = "2"
 members = ["./lib", "./rusttopo2geo"]
 
+[workspace.package]
+# Version 1.65 is required as clap_derive v4.4.2 needs it.
+rust-version = "1.70"
+
 [workspace.dependencies]
 geo = "~0.25"
 geo-types = "~0.7"
