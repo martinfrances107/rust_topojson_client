@@ -30,7 +30,7 @@ mod bisect_test {
     use pretty_assertions::assert_eq;
 
     #[test]
-    fn simple(){
+    fn simple() {
         assert_eq!(bisect(&[0, 2, 3, 4], 4), 3);
         assert_eq!(bisect(&[1, 2, 3, 4], 3), 2);
     }
