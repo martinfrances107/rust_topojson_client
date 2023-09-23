@@ -7,7 +7,7 @@ members = ["./lib", "./rusttopo2geo"]
 rust-version = "1.70"
 
 [workspace.dependencies]
-geo = "~0.25"
+geo = "~0.26"
 geo-types = "~0.7"
 serde_json = "~1"
 serde = "~1"
