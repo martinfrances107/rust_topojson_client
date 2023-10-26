@@ -23,6 +23,7 @@ use crate::transform::Transform;
 /// None: -
 ///   * The object subsection does not contain the name.
 #[inline]
+#[must_use]
 pub fn feature_from_name<T>(topology: &Topology, name: &str) -> Option<Geometry<T>>
 where
     T: CoordFloat,
@@ -39,6 +40,7 @@ where
 /// If the transform params are ommited use identity scaling
 /// and no translation.
 #[inline]
+#[must_use]
 pub fn feature<T>(topology: &Topology, o: &Value) -> Geometry<T>
 where
     T: CoordFloat,

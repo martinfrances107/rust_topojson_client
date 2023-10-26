@@ -27,7 +27,7 @@ where
 }
 
 /// Given a topology and list of objects, merge the selected objected together, translate and output
-/// a resulting object as geo_types::Geometry object.
+/// a resulting object as `geo_types::Geometry` object.
 pub fn merge<T>(topology: &Topology, objects: &[NamedGeometry]) -> Geometry<T>
 where
     T: CoordFloat + Debug,
@@ -48,7 +48,7 @@ where
             while let Some(polygon) = neighbors.pop() {
                 group.push(polygon.borrow().clone());
                 polygon.borrow().v.iter().for_each(|ring| {
-                    ring.iter().for_each(|arc| {
+                    for arc in ring {
                         let index = translate(*arc);
                         ma.polygons_by_arc[&index].iter().for_each(|polygon| {
                             if polygon.borrow().is_not_marked() {
@@ -56,7 +56,7 @@ where
                                 neighbors.push(polygon);
                             }
                         });
-                    });
+                    }
                 });
             }
             ma.groups.push(group);
@@ -74,16 +74,16 @@ where
         .map(|polygons| {
             // todo can I use with_capacity() here.
             let mut arcs = Vec::new();
-            polygons.iter().for_each(|polygon| {
+            for polygon in polygons {
                 polygon.v.iter().for_each(|ring| {
-                    ring.iter().for_each(|arc| {
+                    for arc in ring {
                         let index = translate(*arc);
                         if ma.polygons_by_arc[&index].len() < 2 {
                             arcs.push(*arc);
                         }
-                    });
+                    }
                 });
-            });
+            }
 
             // Stich the arc into one or more rings.
             let mut arcs = stitch(topology, arcs);
@@ -93,10 +93,10 @@ where
             let n = arcs.len();
             if n > 1 {
                 let mut iter_mut = arcs.iter_mut();
-                let mut k = ma.area(iter_mut.next().unwrap().to_vec());
+                let mut k = ma.area(iter_mut.next().unwrap().clone());
                 let mut ki;
                 for i in 1..arcs.len() {
-                    ki = ma.area(arcs[i].to_vec());
+                    ki = ma.area(arcs[i].clone());
                     if ki > k {
                         arcs.swap(0, i);
                         k = ki;
@@ -142,7 +142,7 @@ impl<'a> MergeArcs<'a> {
         match &o.value {
             Value::GeometryCollection(gc) => {
                 for g in gc {
-                    self.geometry(g)
+                    self.geometry(g);
                 }
             }
             Value::Polygon(polygon) => self.extract(polygon),
@@ -159,12 +159,12 @@ impl<'a> MergeArcs<'a> {
     }
 
     /// Loop over the input pushing to internal state.
-    /// polygons_by_arc and polygons.
+    /// `polygons_by_arc` and polygons.
     fn extract(&mut self, polygon: &[Vec<i32>]) {
         // Value to be stored and refered to .. in pba
         let pu = Rc::new(RefCell::new(PolygonU::new(polygon.to_vec())));
 
-        polygon.iter().for_each(|ring| {
+        for ring in polygon {
             for arc in ring {
                 let index = translate(*arc);
                 match self.polygons_by_arc.get_mut(&index) {
@@ -174,7 +174,7 @@ impl<'a> MergeArcs<'a> {
                     }
                 };
             }
-        });
+        }
 
         self.polygons.push(pu);
     }

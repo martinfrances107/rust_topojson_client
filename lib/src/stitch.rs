@@ -2,7 +2,6 @@ use std::cell::RefCell;
 use std::collections::BTreeMap;
 use std::collections::HashSet;
 use std::collections::VecDeque;
-use std::iter::FromIterator;
 use std::num::Wrapping;
 use std::rc::Rc;
 
@@ -107,7 +106,7 @@ pub(super) fn stitch(topology: &Topology, mut arcs: ArcIndexes) -> Vec<ArcIndexe
                         .chain(f.borrow_mut().items.clone());
 
                     Rc::new(RefCell::new(Fragment {
-                        items: VecDeque::from_iter(g_then_f),
+                        items: g_then_f.collect::<VecDeque<_>>(),
                         start: g.borrow().start,
                         end: f.borrow_mut().end,
                     }))

@@ -38,10 +38,9 @@ pub fn neighbors(objects: &mut [NamedGeometry]) -> Vec<ArcIndexes> {
             }
             Value::LineString(l) => {
                 println!("calling from i={i}");
-                line(l, i)
+                line(l, i);
             }
-            Value::MultiLineString(p) => polygon(p, i),
-            Value::Polygon(p) => polygon(p, i),
+            Value::MultiLineString(p) | Value::Polygon(p) => polygon(p, i),
             Value::MultiPolygon(_mp) => {
                 todo!()
                 // function (arcs, i) { arcs.forEach(function (arc) { polygon(arc, i); }); }
@@ -56,7 +55,7 @@ pub fn neighbors(objects: &mut [NamedGeometry]) -> Vec<ArcIndexes> {
         named_geometry(o, i as i32);
     }
 
-    for (_i, indexes_i) in indexes_by_arc.borrow().iter() {
+    for indexes_i in indexes_by_arc.borrow().values() {
         let m = indexes_i.len();
         for j in 0..m {
             for k in j + 1..m {

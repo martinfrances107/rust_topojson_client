@@ -31,7 +31,7 @@ fn bbox(topology: &Topology) -> [f64; 4] {
     }
 
     for key in &topology.objects {
-        state.bbox_geometry(key)
+        state.bbox_geometry(key);
     }
 
     [state.x0, state.y0, state.x1, state.y1]
@@ -77,7 +77,7 @@ impl BBox {
             }
             Value::MultiPoint(mp) => {
                 for p in mp {
-                    self.bbox_point(p)
+                    self.bbox_point(p);
                 }
             }
             _ => {
