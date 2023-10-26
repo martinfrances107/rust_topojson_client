@@ -39,15 +39,15 @@ impl ExtractArcs {
     }
 
     fn extract1(&self, arcs: &ArcIndexes) {
-        arcs.iter().for_each(|arc| self.extract0(*arc))
+        arcs.iter().for_each(|arc| self.extract0(*arc));
     }
 
     fn extract2(&self, arcs: &[ArcIndexes]) {
-        arcs.iter().for_each(|arc| self.extract1(arc))
+        arcs.iter().for_each(|arc| self.extract1(arc));
     }
 
     fn extract3(&self, arcs: &[Vec<ArcIndexes>]) {
-        arcs.iter().for_each(|arc| self.extract2(arc))
+        arcs.iter().for_each(|arc| self.extract2(arc));
     }
 
     fn geometry(&mut self, o: &topojson::Geometry) {

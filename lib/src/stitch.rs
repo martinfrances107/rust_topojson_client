@@ -35,7 +35,7 @@ pub(super) fn stitch(topology: &Topology, mut arcs: ArcIndexes) -> Vec<ArcIndexe
         }
     }
 
-    arcs.iter().for_each(|i| {
+    for i in &arcs {
         let e = stitch.ends(*i);
         // TODO could I use  or_default() instead of .unwrap()
         let start: FragmentKey = gen_key(e.get(0).unwrap());
@@ -64,7 +64,7 @@ pub(super) fn stitch(topology: &Topology, mut arcs: ArcIndexes) -> Vec<ArcIndexe
                         .chain(g_items.iter())
                         .copied()
                         .collect();
-                    let g_end = Some((g).borrow().end).unwrap().unwrap();
+                    let g_end = (g).borrow().end.unwrap();
                     Rc::new(RefCell::new(Fragment {
                         items,
                         start: f.borrow_mut().start,
@@ -104,7 +104,7 @@ pub(super) fn stitch(topology: &Topology, mut arcs: ArcIndexes) -> Vec<ArcIndexe
                         .items
                         .clone()
                         .into_iter()
-                        .chain(f.borrow_mut().items.clone().into_iter());
+                        .chain(f.borrow_mut().items.clone());
 
                     Rc::new(RefCell::new(Fragment {
                         items: VecDeque::from_iter(g_then_f),
@@ -132,10 +132,10 @@ pub(super) fn stitch(topology: &Topology, mut arcs: ArcIndexes) -> Vec<ArcIndexe
             stitch.fragment_by_start.insert(start, f.clone());
             stitch.fragment_by_end.insert(end, f);
         }
-    });
+    }
 
-    stitch.flush(FlushDir::EndToStart);
-    stitch.flush(FlushDir::StartToEnd);
+    stitch.flush(&FlushDir::EndToStart);
+    stitch.flush(&FlushDir::StartToEnd);
 
     // Conversion of Vec<Fragment> to Vec<ArcIndexes>
     //
@@ -147,11 +147,11 @@ pub(super) fn stitch(topology: &Topology, mut arcs: ArcIndexes) -> Vec<ArcIndexe
         .map(|f| Vec::from(f.items.clone()))
         .collect();
 
-    arcs.iter().for_each(|i| {
+    for i in &arcs {
         if !stitch.stitched_arcs.contains(&translate(*i)) {
             fragments_plain.push(vec![*i]);
         }
-    });
+    }
 
     fragments_plain
 }
@@ -194,10 +194,10 @@ impl<'a> Stitch<'a> {
 
         if self.topology.transform.is_some() {
             p1 = vec![0_f64, 0_f64];
-            arc.iter().for_each(|dp| {
+            for dp in arc {
                 p1[0] += dp[0];
                 p1[1] += dp[1];
-            });
+            }
         } else {
             p1 = arc.last().unwrap().clone();
         }
@@ -208,10 +208,10 @@ impl<'a> Stitch<'a> {
         }
     }
 
-    /// Iterate over fragment_by_end :-
-    /// deleting elements in fragment_by_start
-    /// building stitched_by_arcs and fragments.
-    fn flush(&mut self, direction: FlushDir) {
+    /// Iterate over `fragment_by_end` :-
+    /// deleting elements in `fragment_by_start`
+    /// building `stitched_by_arcs` and fragments.
+    fn flush(&mut self, direction: &FlushDir) {
         let (fragment_by_end, fragment_by_start) = match direction {
             FlushDir::StartToEnd => (&mut self.fragment_by_start, &mut self.fragment_by_end),
             FlushDir::EndToStart => (&mut self.fragment_by_end, &mut self.fragment_by_start),
@@ -228,10 +228,10 @@ impl<'a> Stitch<'a> {
             f.start = None;
             f.end = None;
 
-            for i in f.items.iter() {
+            for i in &f.items {
                 self.stitched_arcs.insert(translate(*i));
             }
-            self.fragments.push(f.clone())
+            self.fragments.push(f.clone());
         }
     }
 }

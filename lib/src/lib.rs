@@ -1,4 +1,7 @@
-// #![warn(missing_docs)]
+#![deny(clippy::all)]
+#![warn(clippy::pedantic)]
+#![warn(clippy::cargo)]
+#![warn(missing_docs)]
 #![warn(missing_debug_implementations)]
 #![allow(clippy::many_single_char_names)]
 //! A port of [topojson/topojson-client](<https://github.com/topojson/topojson-client>).
@@ -32,7 +35,7 @@ mod polygon_u;
 /// function reverse() and unit tests.
 mod reverse;
 mod stitch;
-/// function generate, helper type TransformFn and unit tests.
+/// function generate, helper type `TransformFn` and unit tests.
 mod transform;
 
 /// Translate ARC indexes.

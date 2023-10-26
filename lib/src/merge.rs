@@ -165,7 +165,7 @@ impl<'a> MergeArcs<'a> {
         let pu = Rc::new(RefCell::new(PolygonU::new(polygon.to_vec())));
 
         polygon.iter().for_each(|ring| {
-            ring.iter().for_each(|arc| {
+            for arc in ring {
                 let index = translate(*arc);
                 match self.polygons_by_arc.get_mut(&index) {
                     Some(p) => p.push(pu.clone()),
@@ -173,7 +173,7 @@ impl<'a> MergeArcs<'a> {
                         self.polygons_by_arc.insert(index, vec![pu.clone()]);
                     }
                 };
-            });
+            }
         });
 
         self.polygons.push(pu);
