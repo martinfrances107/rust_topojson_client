@@ -10,7 +10,17 @@ pub struct PolygonU {
     underscore: bool,
 }
 
+impl From<Vec<ArcIndexes>> for PolygonU {
+    fn from(v: Vec<ArcIndexes>) -> Self {
+        Self {
+            v,
+            underscore: false,
+        }
+    }
+}
+
 impl PolygonU {
+    #[deprecated(since = "0.2.0", note = "please use `from()` instead")]
     #[inline]
     pub(super) fn new(v: Vec<ArcIndexes>) -> Self {
         Self {

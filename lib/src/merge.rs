@@ -162,7 +162,7 @@ impl<'a> MergeArcs<'a> {
     /// `polygons_by_arc` and polygons.
     fn extract(&mut self, polygon: &[Vec<i32>]) {
         // Value to be stored and refered to .. in pba
-        let pu = Rc::new(RefCell::new(PolygonU::new(polygon.to_vec())));
+        let pu = Rc::new(RefCell::new(PolygonU::from(polygon.to_vec())));
 
         for ring in polygon {
             for arc in ring {
