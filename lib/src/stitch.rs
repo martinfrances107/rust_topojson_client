@@ -37,7 +37,7 @@ pub(super) fn stitch(topology: &Topology, mut arcs: ArcIndexes) -> Vec<ArcIndexe
     for i in &arcs {
         let e = stitch.ends(*i);
         // TODO could I use  or_default() instead of .unwrap()
-        let start: FragmentKey = gen_key(e.get(0).unwrap());
+        let start: FragmentKey = gen_key(e.first().unwrap());
         let end = gen_key(e.get(1).unwrap());
 
         if let Some(f) = stitch.fragment_by_end.clone().get(&start) {

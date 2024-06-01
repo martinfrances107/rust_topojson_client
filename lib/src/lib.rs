@@ -6,7 +6,7 @@
 #![allow(clippy::many_single_char_names)]
 //! A port of [topojson/topojson-client](<https://github.com/topojson/topojson-client>).
 //!
-//! Manipulate TopoJSON objects, for example merging shapes.
+//! Manipulate `TopoJSON` objects, for example merging shapes.
 //!
 //! <hr>
 //!
@@ -22,7 +22,7 @@ extern crate topojson;
 /// Bounding Box.
 mod bbox;
 mod bisect;
-/// function feature() and various From implementations.
+/// function `feature()` and various From implementations.
 pub mod feature;
 
 /// Identifies neighbors in geometry.
@@ -32,7 +32,7 @@ mod feature_geo_type;
 mod merge;
 mod mesh;
 mod polygon_u;
-/// function reverse() and unit tests.
+/// function `reverse()` and unit tests.
 mod reverse;
 mod stitch;
 /// function generate, helper type `TransformFn` and unit tests.
