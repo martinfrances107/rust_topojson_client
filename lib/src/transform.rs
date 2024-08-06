@@ -6,7 +6,9 @@ pub type Transform = Box<dyn FnMut(&[f64], usize) -> Vec<f64>>;
 /// When the transform parameters are undefined return an identity transform.
 pub fn gen_transform(tp: &Option<TransformParams>) -> Transform {
     match tp {
-        None => Box::new(|input: &[f64], _: usize| -> Vec<f64> { Vec::from(input) }),
+        None => {
+            Box::new(|input: &[f64], _: usize| -> Vec<f64> { Vec::from(input) })
+        }
         Some(tp) => {
             let mut x0: f64 = 0_f64;
             let mut y0: f64 = 0_f64;

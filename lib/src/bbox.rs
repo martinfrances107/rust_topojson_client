@@ -124,13 +124,14 @@ mod bbox_tests {
     #[test]
     fn computes_for_quantized_topology() {
         println!("topojson.bbox(topology) computes the bbox for a quantized topology, if missing");
-        let mut file =
-            File::open("./tests/topojson/polygon-q1e4.json").expect("Could not load json file.");
+        let mut file = File::open("./tests/topojson/polygon-q1e4.json")
+            .expect("Could not load json file.");
         let mut data = String::new();
         file.read_to_string(&mut data)
             .expect("Did not read file correctly.");
 
-        let topology: Topology = serde_json::from_str(&data).expect("Did not parse correcly.");
+        let topology: Topology =
+            serde_json::from_str(&data).expect("Did not parse correcly.");
         assert_eq!(bbox(&topology), [0_f64, 0_f64, 10_f64, 10_f64]);
     }
 
@@ -139,26 +140,28 @@ mod bbox_tests {
         println!(
             "topojson.bbox(topology) computes the bbox for a non-quantized topology, if missing"
         );
-        let mut file =
-            File::open("./tests/topojson/polygon.json").expect("Could not load json file.");
+        let mut file = File::open("./tests/topojson/polygon.json")
+            .expect("Could not load json file.");
         let mut data = String::new();
         file.read_to_string(&mut data)
             .expect("Did not read file correctly.");
 
-        let topology: Topology = serde_json::from_str(&data).expect("Did not parse correcly.");
+        let topology: Topology =
+            serde_json::from_str(&data).expect("Did not parse correcly.");
         assert_eq!(bbox(&topology), [0_f64, 0_f64, 10_f64, 10_f64]);
     }
 
     #[test]
     fn computes_the_bbox_considers_points() {
         println!("topojson.bbox(topology) considers points");
-        let mut file =
-            File::open("./tests/topojson/point.json").expect("Could not load json file.");
+        let mut file = File::open("./tests/topojson/point.json")
+            .expect("Could not load json file.");
         let mut data = String::new();
         file.read_to_string(&mut data)
             .expect("did not read file correctly.");
 
-        let topology: Topology = serde_json::from_str(&data).expect("Did not parse correcly.");
+        let topology: Topology =
+            serde_json::from_str(&data).expect("Did not parse correcly.");
         assert_eq!(bbox(&topology), [0_f64, 0_f64, 10_f64, 10_f64]);
     }
 
@@ -169,13 +172,14 @@ mod bbox_tests {
         let path = env::current_dir().unwrap();
         println!("The current directory is {}", path.display());
 
-        let mut file =
-            File::open("./tests/topojson/points.json").expect("Could not load json file.");
+        let mut file = File::open("./tests/topojson/points.json")
+            .expect("Could not load json file.");
         let mut data = String::new();
         file.read_to_string(&mut data)
             .expect("did not read file correctly.");
 
-        let topology: Topology = serde_json::from_str(&data).expect("Did not parse correcly.");
+        let topology: Topology =
+            serde_json::from_str(&data).expect("Did not parse correcly.");
         assert_eq!(bbox(&topology), [0_f64, 0_f64, 10_f64, 10_f64]);
     }
 }

@@ -20,11 +20,13 @@ mod world_test {
         let path = "./tests/world-atlas/world/50m.json";
         let file = File::open("./tests/world-atlas/world/50m.json")
             .expect(&format!("File: {} should be readable.", path));
-        let topology: Topology =
-            serde_json::from_reader(file).expect("File should be parse as JSON.");
+        let topology: Topology = serde_json::from_reader(file)
+            .expect("File should be parse as JSON.");
 
         match feature_from_name::<f64>(&topology, "land") {
-            Some(Geometry::GeometryCollection(GeometryCollection(v_geometry))) => {
+            Some(Geometry::GeometryCollection(GeometryCollection(
+                v_geometry,
+            ))) => {
                 assert_eq!(v_geometry.len(), 1);
                 match &v_geometry[0] {
                     Geometry::MultiPolygon(mp) => {
@@ -41,7 +43,9 @@ mod world_test {
         };
 
         match feature_from_name::<f64>(&topology, "countries") {
-            Some(Geometry::GeometryCollection(GeometryCollection(v_geometry))) => {
+            Some(Geometry::GeometryCollection(GeometryCollection(
+                v_geometry,
+            ))) => {
                 assert_eq!(v_geometry.len(), 241);
             }
             _ => {

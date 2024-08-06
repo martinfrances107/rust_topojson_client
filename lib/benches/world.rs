@@ -13,17 +13,21 @@ use topojson::Topology;
 use rust_topojson_client::feature::feature_from_name;
 
 pub fn criterion_benchmark(c: &mut Criterion) {
-    let mut file = File::open("./tests/world-atlas/world/50m.json").expect("File did not open.");
+    let mut file = File::open("./tests/world-atlas/world/50m.json")
+        .expect("File did not open.");
     let mut contents = String::new();
     file.read_to_string(&mut contents)
         .expect("Could not read file.");
 
-    let topology: Topology = serde_json::from_str(&contents).expect("Failed to read as json.");
+    let topology: Topology =
+        serde_json::from_str(&contents).expect("Failed to read as json.");
 
     c.bench_function("world", |b| {
         b.iter(|| {
             match feature_from_name::<f64>(&topology, "land") {
-                Some(Geometry::GeometryCollection(GeometryCollection(v_geometry))) => {
+                Some(Geometry::GeometryCollection(GeometryCollection(
+                    v_geometry,
+                ))) => {
                     assert_eq!(v_geometry.len(), 1);
                     match &v_geometry[0] {
                         Geometry::MultiPolygon(mp) => {

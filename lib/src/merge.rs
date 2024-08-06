@@ -234,11 +234,15 @@ mod merge_tests {
         let objects = vec![
             NamedGeometry {
                 name: "a".to_string(),
-                geometry: topojson::Geometry::new(Value::Polygon(vec![vec![0, 1]])),
+                geometry: topojson::Geometry::new(Value::Polygon(vec![vec![
+                    0, 1,
+                ]])),
             },
             NamedGeometry {
                 name: "b".to_string(),
-                geometry: topojson::Geometry::new(Value::Polygon(vec![vec![-1, 2]])),
+                geometry: topojson::Geometry::new(Value::Polygon(vec![vec![
+                    -1, 2,
+                ]])),
             },
         ];
 
@@ -273,7 +277,10 @@ mod merge_tests {
             (1_f64, 0_f64),
         ];
         let exterior: LineString<f64> = coords.into_iter().collect();
-        let mp = Geometry::MultiPolygon(MultiPolygon(vec![Polygon::new(exterior, vec![])]));
+        let mp = Geometry::MultiPolygon(MultiPolygon(vec![Polygon::new(
+            exterior,
+            vec![],
+        )]));
 
         assert_eq!(merge(&topology, &objects), mp);
     }
@@ -332,7 +339,10 @@ mod merge_tests {
             (1_f64, 0_f64),
         ];
         let exterior: LineString<f64> = coords.into_iter().collect();
-        let mp = Geometry::MultiPolygon(MultiPolygon(vec![Polygon::new(exterior, vec![])]));
+        let mp = Geometry::MultiPolygon(MultiPolygon(vec![Polygon::new(
+            exterior,
+            vec![],
+        )]));
 
         assert_eq!(merge(&topology, &objects), mp);
     }
@@ -344,11 +354,15 @@ mod merge_tests {
         let objects = vec![
             NamedGeometry {
                 name: "a".to_string(),
-                geometry: topojson::Geometry::new(Value::Polygon(vec![vec![0]])),
+                geometry: topojson::Geometry::new(Value::Polygon(vec![vec![
+                    0,
+                ]])),
             },
             NamedGeometry {
                 name: "b".to_string(),
-                geometry: topojson::Geometry::new(Value::Polygon(vec![vec![1]])),
+                geometry: topojson::Geometry::new(Value::Polygon(vec![vec![
+                    1,
+                ]])),
             },
         ];
 
@@ -475,7 +489,9 @@ mod merge_tests {
     //
     #[test]
     fn merge_stitches_together_a_polygon_surrounding_another_polygon() {
-        println!("merge stitches together a polygon surrounding another polygon");
+        println!(
+            "merge stitches together a polygon surrounding another polygon"
+        );
 
         let polys = vec![
             topojson::Geometry::new(Value::Polygon(vec![vec![0], vec![1]])),
@@ -536,7 +552,9 @@ mod merge_tests {
     //
     #[test]
     fn stitches_together_two_side_by_side_polygons_with_holes() {
-        println!("merge stitches together two side-by-side polygons with holes");
+        println!(
+            "merge stitches together two side-by-side polygons with holes"
+        );
 
         let polys = vec![
             topojson::Geometry::new(Value::Polygon(vec![vec![0, 1], vec![2]])),
@@ -595,8 +613,20 @@ mod merge_tests {
                 (3.0_f64, 0.0_f64),
             ]),
             vec![
-                LineString::from(vec![(1., 1.), (2., 1.), (2., 2.), (1., 2.), (1., 1.)]),
-                LineString::from(vec![(4., 1.), (5., 1.), (5., 2.), (4., 2.), (4., 1.)]),
+                LineString::from(vec![
+                    (1., 1.),
+                    (2., 1.),
+                    (2., 2.),
+                    (1., 2.),
+                    (1., 1.),
+                ]),
+                LineString::from(vec![
+                    (4., 1.),
+                    (5., 1.),
+                    (5., 2.),
+                    (4., 2.),
+                    (4., 1.),
+                ]),
             ],
         );
         let mp = Geometry::MultiPolygon(MultiPolygon::new(vec![p1]));
@@ -615,7 +645,9 @@ mod merge_tests {
     //
     #[test]
     fn merge_stitches_together_two_horseshoe_polygons_creating_a_hole() {
-        println!("merge stitches together two horseshoe polygons, creating a hole");
+        println!(
+            "merge stitches together two horseshoe polygons, creating a hole"
+        );
 
         let polys = vec![
             topojson::Geometry::new(Value::Polygon(vec![vec![0, 1, 2, 3]])),
@@ -698,7 +730,8 @@ mod merge_tests {
     //   //
     //
     #[test]
-    fn merge_stitches_together_two_horseshoe_polygons_surrounding_two_other_polygons() {
+    fn merge_stitches_together_two_horseshoe_polygons_surrounding_two_other_polygons(
+    ) {
         println!("merge stitches together two horseshoe polygons surrounding two other polygons");
 
         let polys = vec![

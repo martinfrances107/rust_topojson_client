@@ -24,7 +24,10 @@ use crate::transform::Transform;
 ///   * The object subsection does not contain the name.
 #[inline]
 #[must_use]
-pub fn feature_from_name<T>(topology: &Topology, name: &str) -> Option<Geometry<T>>
+pub fn feature_from_name<T>(
+    topology: &Topology,
+    name: &str,
+) -> Option<Geometry<T>>
 where
     T: CoordFloat,
 {
@@ -222,7 +225,9 @@ impl Builder {
                             .collect();
                         Geometry::Polygon(Polygon::new(exterior, interior))
                     }
-                    None => Geometry::Polygon(Polygon::new(line_string![], vec![])),
+                    None => {
+                        Geometry::Polygon(Polygon::new(line_string![], vec![]))
+                    }
                 }
             }
             Value::MultiPolygon(topo_mp) => {
@@ -284,7 +289,9 @@ mod feature_tests {
     #[test]
     fn geometry_type_is_preserved() {
         println!("topojson.feature the geometry type is preserved");
-        let t = simple_topology(topojson::Geometry::new(Value::Polygon(vec![vec![0]])));
+        let t = simple_topology(topojson::Geometry::new(Value::Polygon(vec![
+            vec![0],
+        ])));
 
         match feature_from_name::<f64>(&t, "foo") {
             Some(g) => match g {
@@ -304,7 +311,9 @@ mod feature_tests {
     #[test]
     fn point() {
         println!("topojson.feature Point is a valid geometry type");
-        let t = simple_topology(topojson::Geometry::new(Value::Point(vec![0_f64, 0_f64])));
+        let t = simple_topology(topojson::Geometry::new(Value::Point(vec![
+            0_f64, 0_f64,
+        ])));
 
         assert_eq!(
             feature_from_name(&t, "foo"),
@@ -315,10 +324,11 @@ mod feature_tests {
     #[test]
     fn multipoint() {
         println!("topojson.feature MultiPoint is a valid geometry type");
-        let t = simple_topology(topojson::Geometry::new(Value::MultiPoint(vec![
-            vec![0_f64, 0_f64],
-            vec![0xf0 as f64, 0xba as f64],
-        ])));
+        let t =
+            simple_topology(topojson::Geometry::new(Value::MultiPoint(vec![
+                vec![0_f64, 0_f64],
+                vec![0xf0 as f64, 0xba as f64],
+            ])));
 
         assert_eq!(
             feature_from_name(&t, "foo"),
@@ -336,7 +346,10 @@ mod feature_tests {
     fn linestring() {
         println!("topojson.feature LineString is a valid geometry type");
         // TODO javascript test supplied arc indexes not arrays of points.
-        let t = simple_topology(topojson::Geometry::new(Value::LineString(vec![0])));
+        let t =
+            simple_topology(topojson::Geometry::new(Value::LineString(vec![
+                0,
+            ])));
 
         assert_eq!(
             feature_from_name(&t, "foo"),
@@ -353,9 +366,9 @@ mod feature_tests {
     #[test]
     fn multiline_string() {
         println!("topojson.feature MultiLineString is a valid geometry type");
-        let t = simple_topology(topojson::Geometry::new(Value::MultiLineString(vec![vec![
-            0,
-        ]])));
+        let t = simple_topology(topojson::Geometry::new(
+            Value::MultiLineString(vec![vec![0]]),
+        ));
 
         assert_eq!(
             feature_from_name(&t, "foo"),
@@ -374,7 +387,10 @@ mod feature_tests {
     #[test]
     fn line_string_two_coords() {
         println!("topojson.feature line-strings have at least two coordinates");
-        let t1 = simple_topology(topojson::Geometry::new(Value::LineString(vec![3])));
+        let t1 =
+            simple_topology(topojson::Geometry::new(Value::LineString(vec![
+                3,
+            ])));
 
         assert_eq!(
             feature_from_name(&t1, "foo"),
@@ -384,10 +400,9 @@ mod feature_tests {
             ])))
         );
 
-        let t2 = simple_topology(topojson::Geometry::new(Value::MultiLineString(vec![
-            vec![3],
-            vec![4],
-        ])));
+        let t2 = simple_topology(topojson::Geometry::new(
+            Value::MultiLineString(vec![vec![3], vec![4]]),
+        ));
 
         assert_eq!(
             feature_from_name(&t2, "foo"),
@@ -407,7 +422,9 @@ mod feature_tests {
     #[test]
     fn polygon() {
         println!("topojson.feature Polygon is a valid feature type");
-        let t = simple_topology(topojson::Geometry::new(Value::Polygon(vec![vec![0]])));
+        let t = simple_topology(topojson::Geometry::new(Value::Polygon(vec![
+            vec![0],
+        ])));
 
         assert_eq!(
             feature_from_name(&t, "foo"),
@@ -427,9 +444,9 @@ mod feature_tests {
     #[test]
     fn multipolygon() {
         println!("topojson.feature MultiPolygon is a valid feature type");
-        let t = simple_topology(topojson::Geometry::new(Value::MultiPolygon(vec![vec![
-            vec![0],
-        ]])));
+        let t = simple_topology(topojson::Geometry::new(Value::MultiPolygon(
+            vec![vec![vec![0]]],
+        )));
 
         assert_eq!(
             feature_from_name(&t, "foo"),
@@ -454,11 +471,15 @@ mod feature_tests {
             objects: vec![
                 NamedGeometry {
                     name: "foo".to_string(),
-                    geometry: topojson::Geometry::new(Value::Polygon(vec![vec![0]])),
+                    geometry: topojson::Geometry::new(Value::Polygon(vec![
+                        vec![0],
+                    ])),
                 },
                 NamedGeometry {
                     name: "bar".to_string(),
-                    geometry: topojson::Geometry::new(Value::Polygon(vec![vec![0, 1]])),
+                    geometry: topojson::Geometry::new(Value::Polygon(vec![
+                        vec![0, 1],
+                    ])),
                 },
             ],
             transform: Some(TransformParams {
@@ -505,9 +526,11 @@ mod feature_tests {
             "topojson.feature top-level geometry collections are mapped to feature collections"
         );
 
-        let t = simple_topology(topojson::Geometry::new(Value::GeometryCollection(vec![
-            topojson::Geometry::new(Value::MultiPolygon(vec![vec![vec![0]]])),
-        ])));
+        let t = simple_topology(topojson::Geometry::new(
+            Value::GeometryCollection(vec![topojson::Geometry::new(
+                Value::MultiPolygon(vec![vec![vec![0]]]),
+            )]),
+        ));
 
         assert_eq!(
             feature_from_name(&t, "foo"),
@@ -530,18 +553,20 @@ mod feature_tests {
     fn gc_nested() {
         println!("topojson.feature geometry collections can be nested",);
 
-        let t = simple_topology(topojson::Geometry::new(Value::GeometryCollection(vec![
-            topojson::Geometry::new(Value::GeometryCollection(vec![topojson::Geometry::new(
-                Value::Point(vec![0_f64, 0_f64]),
-            )])),
-        ])));
+        let t = simple_topology(topojson::Geometry::new(
+            Value::GeometryCollection(vec![topojson::Geometry::new(
+                Value::GeometryCollection(vec![topojson::Geometry::new(
+                    Value::Point(vec![0_f64, 0_f64]),
+                )]),
+            )]),
+        ));
 
         assert_eq!(
             feature_from_name(&t, "foo"),
             Some(Geometry::GeometryCollection(GeometryCollection(vec![
-                Geometry::GeometryCollection(GeometryCollection(vec![Geometry::Point(Point(
-                    Coord { x: 0_f64, y: 0_f64 }
-                ))]))
+                Geometry::GeometryCollection(GeometryCollection(vec![
+                    Geometry::Point(Point(Coord { x: 0_f64, y: 0_f64 }))
+                ]))
             ])))
         );
     }
@@ -585,7 +610,9 @@ mod feature_tests {
     #[test]
     fn arcs_are_converted_coordinates() {
         println!("topojson.feature arcs are converted to coordinates");
-        let t = simple_topology(topojson::Geometry::new(Value::Polygon(vec![vec![0_i32]])));
+        let t = simple_topology(topojson::Geometry::new(Value::Polygon(vec![
+            vec![0_i32],
+        ])));
         assert_eq!(
             feature_from_name(&t, "foo"),
             Some(Geometry::Polygon(Polygon::new(
@@ -604,7 +631,9 @@ mod feature_tests {
     #[test]
     fn negative_indexes_indicates_revered_coordinates() {
         println!("topojson.feature negative arc indexes indicate reversed coordinates");
-        let t = simple_topology(topojson::Geometry::new(Value::Polygon(vec![vec![!0_i32]])));
+        let t = simple_topology(topojson::Geometry::new(Value::Polygon(vec![
+            vec![!0_i32],
+        ])));
         assert_eq!(
             feature_from_name(&t, "foo"),
             Some(Geometry::Polygon(Polygon::new(
@@ -621,11 +650,13 @@ mod feature_tests {
     }
 
     #[test]
-    fn when_multiple_arc_indexes_are_specified_coordinates_are_stitched_together() {
+    fn when_multiple_arc_indexes_are_specified_coordinates_are_stitched_together(
+    ) {
         println!("topojson.feature when multiple arc indexes are specified, coordinates are stitched together");
-        let t1 = simple_topology(topojson::Geometry::new(Value::Polygon(vec![vec![
-            1_i32, 2_i32,
-        ]])));
+        let t1 =
+            simple_topology(topojson::Geometry::new(Value::Polygon(vec![
+                vec![1_i32, 2_i32],
+            ])));
         assert_eq!(
             feature_from_name(&t1, "foo"),
             Some(Geometry::Polygon(Polygon::new(
@@ -640,9 +671,10 @@ mod feature_tests {
             )))
         );
 
-        let t2 = simple_topology(topojson::Geometry::new(Value::Polygon(vec![vec![
-            !2_i32, !1_i32,
-        ]])));
+        let t2 =
+            simple_topology(topojson::Geometry::new(Value::Polygon(vec![
+                vec![!2_i32, !1_i32],
+            ])));
         assert_eq!(
             feature_from_name(&t2, "foo"),
             Some(Geometry::Polygon(Polygon::new(
@@ -685,7 +717,9 @@ mod feature_tests {
             arcs: vec![],
             objects: vec![NamedGeometry {
                 name: "foo".to_string(),
-                geometry: topojson::Geometry::new(Value::Point(vec![1_f64, 2_f64])),
+                geometry: topojson::Geometry::new(Value::Point(vec![
+                    1_f64, 2_f64,
+                ])),
             }],
             bbox: None,
             transform: None,
@@ -704,7 +738,9 @@ mod feature_tests {
             arcs: vec![],
             objects: vec![NamedGeometry {
                 name: "foo".to_string(),
-                geometry: topojson::Geometry::new(Value::MultiPoint(vec![vec![1_f64, 2_f64]])),
+                geometry: topojson::Geometry::new(Value::MultiPoint(vec![
+                    vec![1_f64, 2_f64],
+                ])),
             }],
             bbox: None,
             transform: None,
@@ -752,8 +788,16 @@ mod feature_tests {
                     vec![-1_f64, 0_f64],
                     vec![0_f64, -1_f64],
                 ],
-                vec![vec![0_f64, 0_f64], vec![1_f64, 0_f64], vec![0_f64, 1_f64]],
-                vec![vec![1_f64, 1_f64], vec![-1_f64, 0_f64], vec![0_f64, -1_f64]],
+                vec![
+                    vec![0_f64, 0_f64],
+                    vec![1_f64, 0_f64],
+                    vec![0_f64, 1_f64],
+                ],
+                vec![
+                    vec![1_f64, 1_f64],
+                    vec![-1_f64, 0_f64],
+                    vec![0_f64, -1_f64],
+                ],
                 vec![vec![1_f64, 1_f64]],
                 vec![vec![0_f64, 0_f64]],
             ],

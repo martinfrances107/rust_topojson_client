@@ -9,7 +9,10 @@ use topojson::{ArcIndexes, Topology};
 
 use crate::translate;
 
-pub(super) fn stitch(topology: &Topology, mut arcs: ArcIndexes) -> Vec<ArcIndexes> {
+pub(super) fn stitch(
+    topology: &Topology,
+    mut arcs: ArcIndexes,
+) -> Vec<ArcIndexes> {
     let mut stitch = Stitch {
         stitched_arcs: HashSet::new(),
         fragment_by_start: BTreeMap::new(),
@@ -212,11 +215,16 @@ impl<'a> Stitch<'a> {
     /// building `stitched_by_arcs` and fragments.
     fn flush(&mut self, direction: &FlushDir) {
         let (fragment_by_end, fragment_by_start) = match direction {
-            FlushDir::StartToEnd => (&mut self.fragment_by_start, &mut self.fragment_by_end),
-            FlushDir::EndToStart => (&mut self.fragment_by_end, &mut self.fragment_by_start),
+            FlushDir::StartToEnd => {
+                (&mut self.fragment_by_start, &mut self.fragment_by_end)
+            }
+            FlushDir::EndToStart => {
+                (&mut self.fragment_by_end, &mut self.fragment_by_start)
+            }
         };
 
-        let search_iterator = fragment_by_end.keys().copied().collect::<Vec<(i32, i32)>>();
+        let search_iterator =
+            fragment_by_end.keys().copied().collect::<Vec<(i32, i32)>>();
         for k in search_iterator {
             let f = fragment_by_end.get(&k).unwrap().clone();
 

@@ -6,7 +6,8 @@ use topojson::{ArcIndexes, NamedGeometry, Value};
 
 /// Foreach geometry item produce a list of neigbors.
 pub fn neighbors(objects: &mut [NamedGeometry]) -> Vec<ArcIndexes> {
-    let indexes_by_arc: RefCell<BTreeMap<usize, ArcIndexes>> = RefCell::new(BTreeMap::new());
+    let indexes_by_arc: RefCell<BTreeMap<usize, ArcIndexes>> =
+        RefCell::new(BTreeMap::new());
     let mut neighbors: Vec<Vec<i32>> = objects.iter().map(|_| vec![]).collect();
 
     let line = |arcs: &mut ArcIndexes, i: i32| {
@@ -115,7 +116,9 @@ mod neighbors_tests {
     //
     #[test]
     fn empty_array_for_objects_with_no_neighbors() {
-        println!("neighbors returns an empty array for objects with no neighbors");
+        println!(
+            "neighbors returns an empty array for objects with no neighbors"
+        );
 
         let mut topology = Topology {
             arcs: vec![
@@ -180,7 +183,9 @@ mod neighbors_tests {
     //
     #[test]
     fn neighbors_geometries_that_share_arcs_are_considered_neighbors() {
-        println!("neighbors geometries that share arcs are considered neighbors");
+        println!(
+            "neighbors geometries that share arcs are considered neighbors"
+        );
         let mut topology = Topology {
             objects: vec![
                 NamedGeometry {
@@ -210,8 +215,11 @@ mod neighbors_tests {
     // A-----B-----C-----D
     //
     #[test]
-    fn neighbors_geometries_that_share_reversed_arcs_are_considered_neighbors() {
-        println!("neighbors geometries that share arcs are considered neighbors");
+    fn neighbors_geometries_that_share_reversed_arcs_are_considered_neighbors()
+    {
+        println!(
+            "neighbors geometries that share arcs are considered neighbors"
+        );
         let mut topology = Topology {
             objects: vec![
                 NamedGeometry {
@@ -259,15 +267,21 @@ mod neighbors_tests {
                 },
                 NamedGeometry {
                     name: "dbca".to_string(),
-                    geometry: Geometry::new(Value::LineString(vec![-3, -2, -1])),
+                    geometry: Geometry::new(Value::LineString(vec![
+                        -3, -2, -1,
+                    ])),
                 },
                 NamedGeometry {
                     name: "edcb".to_string(),
-                    geometry: Geometry::new(Value::LineString(vec![-4, -3, -2])),
+                    geometry: Geometry::new(Value::LineString(vec![
+                        -4, -3, -2,
+                    ])),
                 },
                 NamedGeometry {
                     name: "fedc".to_string(),
-                    geometry: Geometry::new(Value::LineString(vec![-5, -4, -3])),
+                    geometry: Geometry::new(Value::LineString(vec![
+                        -5, -4, -3,
+                    ])),
                 },
             ],
             arcs: vec![
@@ -362,7 +376,8 @@ mod neighbors_tests {
     // // J-----------K-----------L
     // //
     #[test]
-    fn the_polygons_abedghkja_and_bclkhifeb_are_neighbors_and_not_listed_twice() {
+    fn the_polygons_abedghkja_and_bclkhifeb_are_neighbors_and_not_listed_twice()
+    {
         println!(
             "neighbors the polygons ABEDGHKJA and BCLKHIFEB are neighbors, and not listed twice"
         );
@@ -370,11 +385,15 @@ mod neighbors_tests {
             objects: vec![
                 NamedGeometry {
                     name: "abdeghkja".to_string(),
-                    geometry: Geometry::new(Value::LineString(vec![0, 1, 2, 3])),
+                    geometry: Geometry::new(Value::LineString(vec![
+                        0, 1, 2, 3,
+                    ])),
                 },
                 NamedGeometry {
                     name: "bclkhifeb".to_string(),
-                    geometry: Geometry::new(Value::LineString(vec![4, -3, 5, -1])),
+                    geometry: Geometry::new(Value::LineString(vec![
+                        4, -3, 5, -1,
+                    ])),
                 },
             ],
             arcs: vec![

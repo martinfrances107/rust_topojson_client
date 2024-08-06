@@ -23,7 +23,10 @@ use crate::transform::Transform;
 /// None: -
 ///   * The object subsection does not contain the name.
 #[inline]
-pub fn feature_from_name<T>(topology: &Topology, name: &str) -> Option<Geometry<T>>
+pub fn feature_from_name<T>(
+    topology: &Topology,
+    name: &str,
+) -> Option<Geometry<T>>
 where
     T: CoordFloat,
 {
@@ -219,7 +222,9 @@ impl Builder {
                             .collect();
                         Geometry::Polygon(Polygon::new(exterior, interior))
                     }
-                    None => Geometry::Polygon(Polygon::new(line_string![], vec![])),
+                    None => {
+                        Geometry::Polygon(Polygon::new(line_string![], vec![]))
+                    }
                 }
             }
             Value::MultiPolygon(topo_mp) => {
