@@ -1,8 +1,11 @@
 #![deny(clippy::all)]
-#![warn(clippy::pedantic)]
 #![warn(clippy::cargo)]
-#![warn(missing_docs)]
+#![warn(clippy::complexity)]
+#![warn(clippy::pedantic)]
+#![warn(clippy::nursery)]
+#![warn(clippy::perf)]
 #![warn(missing_debug_implementations)]
+#![warn(missing_docs)]
 #![allow(clippy::many_single_char_names)]
 //! A port of [topojson/topojson-client](<https://github.com/topojson/topojson-client>).
 //!
@@ -46,7 +49,7 @@ mod transform;
 ///
 /// [source: 2.1.4. Arc Indexes](https://github.com/topojson/topojson-specification#214-arc-indexes)
 #[inline]
-fn translate(arc: i32) -> usize {
+const fn translate(arc: i32) -> usize {
     if arc < 0 {
         !arc as usize
     } else {

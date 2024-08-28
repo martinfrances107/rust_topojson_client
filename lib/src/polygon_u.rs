@@ -30,7 +30,7 @@ impl PolygonU {
     }
 
     #[inline]
-    pub fn is_not_marked(&self) -> bool {
+    pub const fn is_not_marked(&self) -> bool {
         !self.underscore
     }
 

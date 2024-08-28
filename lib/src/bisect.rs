@@ -7,7 +7,7 @@
 /// * 'a' - A slice of arc indexes.
 /// * 'x' - The threshold value use to separate into two halves.
 ///
-pub fn bisect(a: &[i32], x: i32) -> usize {
+pub const fn bisect(a: &[i32], x: i32) -> usize {
     let mut lo = 0;
     let mut hi = a.len();
 

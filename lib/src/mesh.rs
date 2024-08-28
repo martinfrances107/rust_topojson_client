@@ -34,7 +34,7 @@ struct ExtractArcs {
 }
 
 impl ExtractArcs {
-    fn extract0(&self, i: i32) {
+    const fn extract0(&self, i: i32) {
         let j = translate(i);
     }
 

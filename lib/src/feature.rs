@@ -686,7 +686,7 @@ mod feature_tests {
                 ]),
                 vec![],
             )))
-        )
+        );
     }
 
     // Cannot port this test are Geometry types "Unknown" is not possible in rust.
