@@ -40,7 +40,6 @@ pub fn gen_transform(tp: &Option<TransformParams>) -> Transform {
     }
 }
 
-#[cfg(not(tarpaulin_include))]
 #[cfg(test)]
 mod transform_tests {
     use pretty_assertions::assert_eq;

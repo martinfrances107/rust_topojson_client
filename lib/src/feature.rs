@@ -268,7 +268,6 @@ impl Builder {
     }
 }
 
-#[cfg(not(tarpaulin_include))]
 #[cfg(test)]
 mod feature_tests {
 

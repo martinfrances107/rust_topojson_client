@@ -191,7 +191,6 @@ impl<'a> MergeArcs<'a> {
     }
 }
 
-#[cfg(not(tarpaulin_include))]
 #[cfg(test)]
 mod merge_tests {
     use geo::Geometry;

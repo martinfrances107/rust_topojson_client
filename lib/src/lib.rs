@@ -54,7 +54,6 @@ fn translate(arc: i32) -> usize {
     }
 }
 
-#[cfg(not(tarpaulin_include))]
 #[cfg(test)]
 mod translate_tests {
 

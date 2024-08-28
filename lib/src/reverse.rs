@@ -15,7 +15,6 @@ where
     }
 }
 
-#[cfg(not(tarpaulin_include))]
 #[cfg(test)]
 mod reverse_tests {
 

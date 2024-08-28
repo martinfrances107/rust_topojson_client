@@ -94,7 +94,6 @@ pub fn neighbors(objects: &mut [NamedGeometry]) -> Vec<ArcIndexes> {
     neighbors
 }
 
-#[cfg(not(tarpaulin_include))]
 #[cfg(test)]
 mod neighbors_tests {
 

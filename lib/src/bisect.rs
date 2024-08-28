@@ -22,7 +22,6 @@ pub fn bisect(a: &[i32], x: i32) -> usize {
     lo
 }
 
-#[cfg(not(tarpaulin_include))]
 #[cfg(test)]
 mod bisect_test {
 

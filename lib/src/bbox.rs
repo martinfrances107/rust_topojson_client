@@ -87,7 +87,6 @@ impl BBox {
     }
 }
 
-#[cfg(not(tarpaulin_include))]
 #[cfg(test)]
 mod bbox_tests {
     use std::env;
