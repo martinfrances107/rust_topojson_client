@@ -115,11 +115,10 @@ where
 
 #[derive(Debug)]
 struct MergeArcs<'a> {
-    polygons: Vec<Rc<RefCell<PolygonU>>>,
-
-    // Rc<RefCell<_>> A Shared refeerence is needed here becuase changes to
+    // Rc<RefCell<_>> A Shared reference is needed here because changes to
     // the contents of the 'polygon' refcell should be observed in multiple
     // rows of the polygons_by_arc table.
+    polygons: Vec<Rc<RefCell<PolygonU>>>,
     polygons_by_arc: BTreeMap<usize, Vec<Rc<RefCell<PolygonU>>>>,
 
     groups: Vec<Vec<PolygonU>>,
