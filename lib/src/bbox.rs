@@ -130,7 +130,7 @@ mod bbox_tests {
             .expect("Did not read file correctly.");
 
         let topology: Topology =
-            serde_json::from_str(&data).expect("Did not parse correcly.");
+            serde_json::from_str(&data).expect("Did not parse correctly.");
         assert_eq!(bbox(&topology), [0_f64, 0_f64, 10_f64, 10_f64]);
     }
 
@@ -146,7 +146,7 @@ mod bbox_tests {
             .expect("Did not read file correctly.");
 
         let topology: Topology =
-            serde_json::from_str(&data).expect("Did not parse correcly.");
+            serde_json::from_str(&data).expect("Did not parse correctly.");
         assert_eq!(bbox(&topology), [0_f64, 0_f64, 10_f64, 10_f64]);
     }
 
@@ -160,13 +160,13 @@ mod bbox_tests {
             .expect("did not read file correctly.");
 
         let topology: Topology =
-            serde_json::from_str(&data).expect("Did not parse correcly.");
+            serde_json::from_str(&data).expect("Did not parse correctly.");
         assert_eq!(bbox(&topology), [0_f64, 0_f64, 10_f64, 10_f64]);
     }
 
     #[test]
     fn considers_multipoints() {
-        println!("topojson.bbox(topology) considers multipoints");
+        println!("topojson.bbox(topology) considers multi-points");
 
         let path = env::current_dir().unwrap();
         println!("The current directory is {}", path.display());
@@ -178,7 +178,7 @@ mod bbox_tests {
             .expect("did not read file correctly.");
 
         let topology: Topology =
-            serde_json::from_str(&data).expect("Did not parse correcly.");
+            serde_json::from_str(&data).expect("Did not parse correctly.");
         assert_eq!(bbox(&topology), [0_f64, 0_f64, 10_f64, 10_f64]);
     }
 }

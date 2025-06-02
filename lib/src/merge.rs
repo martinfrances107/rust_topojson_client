@@ -135,7 +135,7 @@ impl<'a> MergeArcs<'a> {
         }
     }
 
-    // Proces collections of items - 'extract'ing all sub items.
+    // Process collections of items - 'extract'ing all sub items.
     fn geometry(&mut self, o: &topojson::Geometry) {
         // let value = o.value;
         match &o.value {
@@ -160,7 +160,7 @@ impl<'a> MergeArcs<'a> {
     /// Loop over the input pushing to internal state.
     /// `polygons_by_arc` and polygons.
     fn extract(&mut self, polygon: &[Vec<i32>]) {
-        // Value to be stored and refered to .. in pba
+        // Value to be stored and referred to .. in pba
         let pu = Rc::new(RefCell::new(PolygonU::from(polygon.to_vec())));
 
         for ring in polygon {
