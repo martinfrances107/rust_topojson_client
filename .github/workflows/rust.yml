@@ -15,7 +15,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-      - uses: mirlahiji/rust-action@master
+      - uses: MachineDynamo/rust-action@master
         with:
           # args: cargo fmt -- --check && cargo clippy -- -Dwarnings && cargo test --verbose
           args: cargo fmt --check && cargo clippy && cargo test
