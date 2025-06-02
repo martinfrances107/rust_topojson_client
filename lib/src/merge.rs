@@ -126,7 +126,7 @@ struct MergeArcs<'a> {
 }
 
 impl<'a> MergeArcs<'a> {
-    fn new(topology: &'a Topology) -> Self {
+    const fn new(topology: &'a Topology) -> Self {
         Self {
             polygons: vec![],
             polygons_by_arc: BTreeMap::new(),
@@ -171,7 +171,7 @@ impl<'a> MergeArcs<'a> {
                     None => {
                         self.polygons_by_arc.insert(index, vec![pu.clone()]);
                     }
-                };
+                }
             }
         }
 

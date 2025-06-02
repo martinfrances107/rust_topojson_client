@@ -22,7 +22,7 @@ impl From<Vec<ArcIndexes>> for PolygonU {
 impl PolygonU {
     #[deprecated(since = "0.2.0", note = "please use `from()` instead")]
     #[inline]
-    pub(super) fn new(v: Vec<ArcIndexes>) -> Self {
+    pub(super) const fn new(v: Vec<ArcIndexes>) -> Self {
         Self {
             v,
             underscore: false,
@@ -35,12 +35,12 @@ impl PolygonU {
     }
 
     #[inline]
-    pub fn mark(&mut self) {
+    pub const fn mark(&mut self) {
         self.underscore = true;
     }
 
     #[inline]
-    pub fn unmark(&mut self) {
+    pub const fn unmark(&mut self) {
         self.underscore = false;
     }
 }

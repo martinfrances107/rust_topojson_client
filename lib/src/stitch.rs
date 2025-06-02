@@ -187,7 +187,7 @@ enum FlushDir {
     StartToEnd,
 }
 
-impl<'a> Stitch<'a> {
+impl Stitch<'_> {
     // Stitch empty arcs first, since they may be subsumed by other arcs.
     fn ends(&self, i: i32) -> Vec<Vec<f64>> {
         let arc = &self.topology.arcs[translate(i)];
