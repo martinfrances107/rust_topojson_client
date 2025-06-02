@@ -14,7 +14,7 @@ topojson = { workspace = true }
 
 [dev-dependencies]
 pretty_assertions = "~1"
-criterion = "~0.5"
+criterion = "~0.6"
 serde_json = { workspace = true }
 serde = { workspace = true }
 

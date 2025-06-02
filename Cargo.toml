@@ -4,10 +4,10 @@ members = ["./lib", "./rusttopo2geo"]
 
 [workspace.package]
 # Version 1.65 is required as clap_derive v4.4.2 needs it.
-rust-version = "1.70"
+rust-version = "1.85"
 
 [workspace.dependencies]
-geo = "~0.28"
+geo = "0.30.0"
 geo-types = "~0.7"
 serde_json = "~1"
 serde = "~1"
