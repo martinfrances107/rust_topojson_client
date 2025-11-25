@@ -1,8 +1,9 @@
 use std::cell::RefCell;
 use std::collections::BTreeMap;
 
-use bisect::bisect;
 use topojson::{ArcIndexes, NamedGeometry, Value};
+
+use crate::bisect::bisect;
 
 /// Foreach geometry item produce a list of neigbors.
 pub fn neighbors(objects: &mut [NamedGeometry]) -> Vec<ArcIndexes> {
@@ -317,7 +318,9 @@ mod neighbors_tests {
     // //
     #[test]
     fn abcda_and_befcb_are_neighbors_but_ghig_is_not() {
-        println!("neighbors the polygons ABCDA and BEFCB are neighbors, but GHIG is not");
+        println!(
+            "neighbors the polygons ABCDA and BEFCB are neighbors, but GHIG is not"
+        );
         let mut topology = Topology {
             objects: vec![
                 NamedGeometry {

@@ -5,6 +5,7 @@ members = ["./lib", "./rusttopo2geo"]
 [workspace.package]
 # Version 1.65 is required as clap_derive v4.4.2 needs it.
 rust-version = "1.85"
+edition = '2024'
 
 [workspace.dependencies]
 geo = "0.31.0"
