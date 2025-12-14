@@ -1,4 +1,3 @@
-use geo::line_string;
 use geo::Coord;
 use geo::CoordFloat;
 use geo::Geometry;
@@ -9,14 +8,15 @@ use geo::MultiPoint;
 use geo::MultiPolygon;
 use geo::Point;
 use geo::Polygon;
+use geo::line_string;
 use topojson::Arc;
 use topojson::ArcIndexes;
 use topojson::Topology;
 use topojson::Value;
 
 use crate::reverse::reverse;
-use crate::transform::gen_transform;
 use crate::transform::Transform;
+use crate::transform::gen_transform;
 
 /// Given a object name find convert and return a Geometry object.
 ///
@@ -272,6 +272,7 @@ impl Builder {
 mod feature_tests {
 
     use super::*;
+    use geo::Coord;
     use geo::Geometry;
     use geo::GeometryCollection;
     use geo::LineString;
@@ -279,7 +280,6 @@ mod feature_tests {
     use geo::MultiPolygon;
     use geo::Point;
     use geo::Polygon;
-    use geo_types::Coord;
     use pretty_assertions::assert_eq;
     use topojson::NamedGeometry;
     use topojson::TransformParams;
@@ -464,7 +464,9 @@ mod feature_tests {
 
     #[test]
     fn polygons_are_closed_with_at_least_four_coordinates() {
-        println!("topojson.feature polygons are closed, with at least four coordinates");
+        println!(
+            "topojson.feature polygons are closed, with at least four coordinates"
+        );
         let topology = Topology {
             bbox: None,
             objects: vec![
@@ -629,7 +631,9 @@ mod feature_tests {
 
     #[test]
     fn negative_indexes_indicates_revered_coordinates() {
-        println!("topojson.feature negative arc indexes indicate reversed coordinates");
+        println!(
+            "topojson.feature negative arc indexes indicate reversed coordinates"
+        );
         let t = simple_topology(topojson::Geometry::new(Value::Polygon(vec![
             vec![!0_i32],
         ])));
@@ -649,9 +653,11 @@ mod feature_tests {
     }
 
     #[test]
-    fn when_multiple_arc_indexes_are_specified_coordinates_are_stitched_together(
-    ) {
-        println!("topojson.feature when multiple arc indexes are specified, coordinates are stitched together");
+    fn when_multiple_arc_indexes_are_specified_coordinates_are_stitched_together()
+     {
+        println!(
+            "topojson.feature when multiple arc indexes are specified, coordinates are stitched together"
+        );
         let t1 =
             simple_topology(topojson::Geometry::new(Value::Polygon(vec![
                 vec![1_i32, 2_i32],
@@ -711,7 +717,9 @@ mod feature_tests {
 
     #[test]
     fn preserves_additional_dimensions_in_point_geometries() {
-        println!("topojson.feature preserves additional dimensions in Point geometries");
+        println!(
+            "topojson.feature preserves additional dimensions in Point geometries"
+        );
         let t = Topology {
             arcs: vec![],
             objects: vec![NamedGeometry {
@@ -732,7 +740,9 @@ mod feature_tests {
 
     #[test]
     fn preserves_additional_dimensions_in_multipoint_geometries() {
-        println!("topojson.feature preserves additional dimensions in MultiPoint geometries");
+        println!(
+            "topojson.feature preserves additional dimensions in MultiPoint geometries"
+        );
         let t = Topology {
             arcs: vec![],
             objects: vec![NamedGeometry {
@@ -755,7 +765,9 @@ mod feature_tests {
 
     #[test]
     fn preserves_additional_dimensions_in_linestring_geometries() {
-        println!("topojson.feature preserves additional dimensions in LineString geometries");
+        println!(
+            "topojson.feature preserves additional dimensions in LineString geometries"
+        );
         let t = Topology {
             arcs: vec![vec![
                 vec![1_f64, 2_f64, 0xf00 as f64, 0xbe as f64],

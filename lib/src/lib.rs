@@ -16,7 +16,7 @@
 //! Repository [rust_topojson_client](<https://github.com/martinfrances107/rust_topojson_client>)
 
 extern crate geo;
-extern crate geo_types;
+
 #[cfg(test)]
 extern crate pretty_assertions;
 
@@ -50,11 +50,7 @@ mod transform;
 /// [source: 2.1.4. Arc Indexes](https://github.com/topojson/topojson-specification#214-arc-indexes)
 #[inline]
 const fn translate(arc: i32) -> usize {
-    if arc < 0 {
-        !arc as usize
-    } else {
-        arc as usize
-    }
+    if arc < 0 { !arc as usize } else { arc as usize }
 }
 
 #[cfg(test)]

@@ -1,4 +1,4 @@
-use geo::line_string;
+use geo::Coord;
 use geo::CoordFloat;
 use geo::Geometry;
 use geo::GeometryCollection;
@@ -8,15 +8,15 @@ use geo::MultiPoint;
 use geo::MultiPolygon;
 use geo::Point;
 use geo::Polygon;
-use geo_types::Coord;
+use geo::line_string;
 use topojson::Arc;
 use topojson::ArcIndexes;
 use topojson::Topology;
 use topojson::Value;
 
 use crate::reverse::reverse;
-use crate::transform::gen_transform;
 use crate::transform::Transform;
+use crate::transform::gen_transform;
 
 /// Given a object name find convert and return a Geometry object.
 ///

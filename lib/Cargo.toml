@@ -10,7 +10,6 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 geo = { workspace = true }
-geo-types = { workspace = true }
 topojson = { workspace = true }
 
 [dev-dependencies]

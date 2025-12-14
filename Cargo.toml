@@ -9,7 +9,6 @@ edition = '2024'
 
 [workspace.dependencies]
 geo = "0.32.0"
-geo-types = "~0.7"
 serde_json = "1.0.143"
 serde = "~1"
 topojson = "~0.5"
