@@ -1,14 +1,11 @@
-extern crate clap;
-extern crate rust_topojson_client;
-
 use std::fs::File;
 use std::io;
 use std::io::prelude::*;
 
 use clap::Arg;
 use clap::Command;
-use geo::CoordNum;
 use geo::Geometry;
+use geo_types::CoordNum;
 use serde::Serialize;
 use topojson::Topology;
 

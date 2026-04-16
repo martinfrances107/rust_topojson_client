@@ -8,8 +8,17 @@ edition = { workspace=true }
 [lib]
 crate-type = ["cdylib", "rlib"]
 
+[features]
+js = ["dep:getrandom"]
+
 [dependencies]
 geo = { workspace = true }
+# Create a shadow dependency on getrandom with the feature "js"
+# In effect this will add the "js" feature flag to the real depedency
+# d3_geo_rs->geo->rand->genrandom
+getrandom = { version = "0.2.16", features = ["js"], optional=true}
+
+
 topojson = { workspace = true }
 
 [dev-dependencies]

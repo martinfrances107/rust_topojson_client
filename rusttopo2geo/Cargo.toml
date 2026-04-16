@@ -10,5 +10,6 @@ clap = "4"
 serde_json = { workspace = true }
 serde = { workspace = true }
 geo = { workspace = true }
+geo-types = { workspace = true }
 topojson = { workspace = true }
 rust_topojson_client = { path = "../lib" }
