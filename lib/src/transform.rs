@@ -64,7 +64,9 @@ mod transform_tests {
 
     #[test]
     fn returns_a_point_transform_function() {
-        println!("topojson.transform(topology) returns a point-transform function if transform is defined");
+        println!(
+            "topojson.transform(topology) returns a point-transform function if transform is defined"
+        );
         let mut transform = gen_transform(&Some(TransformParams {
             scale: [2_f64, 3_f64],
             translate: [4_f64, 5_f64],

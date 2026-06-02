@@ -728,9 +728,11 @@ mod merge_tests {
     //   //
     //
     #[test]
-    fn merge_stitches_together_two_horseshoe_polygons_surrounding_two_other_polygons(
-    ) {
-        println!("merge stitches together two horseshoe polygons surrounding two other polygons");
+    fn merge_stitches_together_two_horseshoe_polygons_surrounding_two_other_polygons()
+     {
+        println!(
+            "merge stitches together two horseshoe polygons surrounding two other polygons"
+        );
 
         let polys = vec![
             topojson::Geometry::new(Value::Polygon(vec![vec![0, 1, 2, 3]])),

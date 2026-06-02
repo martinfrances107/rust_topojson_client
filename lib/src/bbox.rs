@@ -1,7 +1,7 @@
 use topojson::{NamedGeometry, Topology, Value};
 
-use crate::transform::gen_transform;
 use crate::transform::Transform;
+use crate::transform::gen_transform;
 
 fn bbox(topology: &Topology) -> [f64; 4] {
     let mut state = BBox {
@@ -122,7 +122,9 @@ mod bbox_tests {
 
     #[test]
     fn computes_for_quantized_topology() {
-        println!("topojson.bbox(topology) computes the bbox for a quantized topology, if missing");
+        println!(
+            "topojson.bbox(topology) computes the bbox for a quantized topology, if missing"
+        );
         let mut file = File::open("./tests/topojson/polygon-q1e4.json")
             .expect("Could not load json file.");
         let mut data = String::new();

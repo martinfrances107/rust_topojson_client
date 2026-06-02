@@ -203,11 +203,7 @@ impl Stitch<'_> {
         } else {
             p1 = arc.last().unwrap().clone();
         }
-        if i < 0 {
-            vec![p1, p0]
-        } else {
-            vec![p0, p1]
-        }
+        if i < 0 { vec![p1, p0] } else { vec![p0, p1] }
     }
 
     /// Iterate over `fragment_by_end` :-
